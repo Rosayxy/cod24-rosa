@@ -120,8 +120,13 @@ module lab2_top (
 
   // 按键检测模块，在按键上升沿（按下）后输出高电平脉冲
   // TODO: 同上，实现 trigger 模块，并例化
+  //  按键是图中的 push_btn
+
 
   // 低位数码管译码器
   // TODO: 例化模板中的 SEG7_LUT 模块
-
+  SEG7_LUT u_seg7_lut0 (
+      .in  (count[3:0]),
+      .out (dpy0)
+  );
 endmodule

@@ -107,7 +107,49 @@ module lab3_top (
 
   // TODO: 内部信号声明
 
+  wire [4:0] rf_raddr_a, rf_raddr_b, rf_waddr;
+  wire [15:0] rf_rdata_a, rf_rdata_b,rf_wdata;
+  wire rf_we;
+  wire [15:0] alu_a, alu_b, alu_y;
+  wire [3:0] alu_op;
+  
   // TODO: 实验模块例化
+  controller my_controller(
+    .clk(clk_50M),
+    .reset(reset_btn),
+    .rf_raddr_a(rf_raddr_a),
+    .rf_rdata_a(rf_rdata_a),
+    .rf_raddr_b(rf_raddr_b),
+    .rf_rdata_b(rf_rdata_b),
+    .rf_waddr(rf_waddr),
+    .rf_wdata(rf_wdata),
+    .rf_we(rf_we),
+    .alu_a(alu_a),
+    .alu_b(alu_b),
+    .alu_op(alu_op),
+    .alu_y(alu_y),
+    .step(push_btn),
+    .dip_sw(dip_sw),
+    .leds(leds)
+  );
 
+  alu my_alu(
+    .a(alu_a),
+    .b(alu_b),
+    .op(alu_op),
+    .y(alu_y)
+  );
+  
+  register_file my_regfile(
+    .raddr_a(rf_raddr_a),
+    .raddr_b(rf_raddr_b),
+    .waddr(rf_waddr),
+    .wdata(rf_wdata),
+    .we(rf_we),
+    .clk(clk_50M),
+    .reset(reset_btn),
+    .rdata_a(rf_rdata_a),
+    .rdata_b(rf_rdata_b)
+  );
 
 endmodule

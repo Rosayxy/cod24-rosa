@@ -69,6 +69,35 @@ module lab3_tb;
     end
 
     // TODO: 随机测试各种指令
+    // 测试 Instr_rtype
+    for (int i = 1; i < 32; i = i + 1) begin
+      #100;
+      rd = i;   // only lower 5 bits
+      rs1 = $urandom_range(0, 32);
+      rs2 = $urandom_range(0, 32);
+      opcode = $urandom_range(0, 10);
+      dip_sw = `inst_rtype(rd, rs1, rs2, opcode);
+      push_btn = 1;
+
+      #100;
+      push_btn = 0;
+
+      #1000;
+    end
+    
+    // 测试 instr_peek
+    for (int i = 1; i < 32; i = i + 1) begin
+      #100;
+      rd = i;   // only lower 5 bits
+      imm = $urandom_range(0, 65536);
+      dip_sw = `inst_peek(rd, imm);
+      push_btn = 1;
+
+      #100;
+      push_btn = 0;
+
+      #1000;
+    end
 
     #10000 $finish;
   end
