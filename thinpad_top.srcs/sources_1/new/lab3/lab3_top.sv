@@ -1,5 +1,5 @@
 `default_nettype none
-
+// **现有改动：为了调试方便而把 imm rd_in 所有的 type 接出去**
 module lab3_top (
     input wire clk_50M,     // 50MHz 时钟输入
     input wire clk_11M0592, // 11.0592MHz 时钟输入（备用，可不用）
@@ -78,6 +78,7 @@ module lab3_top (
     output wire       video_vsync,  // 场同步（垂直同步）信号
     output wire       video_clk,    // 像素时钟输出
     output wire       video_de      // 行数据有效信号，用于区分消隐区
+
 );
 
   /* =========== Demo code begin =========== */
@@ -113,9 +114,9 @@ module lab3_top (
   wire [15:0] alu_a, alu_b, alu_y;
   wire [3:0] alu_op;
   
-  // TODO: 实验模块例化
+  // TODO: 实验模块例化 改成了 10M 的时钟 看看是不是还有 bug
   controller my_controller(
-    .clk(clk_50M),
+    .clk(clk_10M),
     .reset(reset_btn),
     .rf_raddr_a(rf_raddr_a),
     .rf_rdata_a(rf_rdata_a),
@@ -146,7 +147,7 @@ module lab3_top (
     .waddr(rf_waddr),
     .wdata(rf_wdata),
     .we(rf_we),
-    .clk(clk_50M),
+    .clk(clk_10M),
     .reset(reset_btn),
     .rdata_a(rf_rdata_a),
     .rdata_b(rf_rdata_b)

@@ -37,74 +37,104 @@ module lab3_tb;
     ROL = 4'b1010
   } opcode_t;
 
-  logic is_rtype, is_itype, is_load, is_store, is_unknown;
+  logic is_rtype, is_itype, is_load, is_store, is_unknown,is_peek,is_poke;
   logic [15:0] imm;
   logic [4:0] rd, rs1, rs2;
   logic [3:0] opcode;
-
+  logic [4:0] real_rd;
+  logic [15:0] one;
+  logic [15:0] alu_a, alu_b, alu_y;
+  logic [3:0] alu_op,state_dbg;
+  logic [15:0] wdata_dbg,fake_leds;
   initial begin
     // 在这里可以自定义测试输入序列，例如：
     dip_sw = 32'h0;
     touch_btn = 0;
     reset_btn = 0;
     push_btn = 0;
-
+    one=16'd1;
     #100;
     reset_btn = 1;
     #100;
     reset_btn = 0;
     #1000;  // 等待复位结束
 
-    // 样例：使用 POKE 指令为寄存器赋随机初值
-    for (int i = 1; i < 32; i = i + 1) begin
-      #100;
-      rd = i;   // only lower 5 bits
-      dip_sw = `inst_poke(rd, $urandom_range(0, 65536));
-      push_btn = 1;
+    // // 样例：使用 POKE 指令为寄存器赋随机初值
+    // for (int i = 1; i < 10; i = i + 1) begin
+    //   #100;
+    //   rd = i;   // only lower 5 bits
+    //   dip_sw = `inst_poke(rd, $urandom_range(0, 65536));
+    //   push_btn = 1;
 
+    //   #100;
+    //   push_btn = 0;
+
+    //   #1000;
+    // end
+
+    dip_sw=`inst_poke(5'd1, 16'd3);
+    push_btn = 1;
+    #100;
+    push_btn = 0;
+    #1000;
+    
+    dip_sw=`inst_poke(5'd2, 16'd1);
+    push_btn = 1;
+    #100;
+    push_btn = 0;
+    #1000;
+
+    dip_sw=`inst_poke(5'd3, 16'd2);
+    push_btn = 1;
+    #100;
+    push_btn = 0;
+    #1000;
+
+    dip_sw=`inst_poke(5'd4, 16'd4);
+    push_btn = 1;
+    #100;
+    push_btn = 0;
+    #1000;
+
+    dip_sw=`inst_poke(5'd5, 16'd5);
+    push_btn = 1;
+    #100;
+    push_btn = 0;
+    #1000;
+    // // 求和
+    dip_sw=`inst_rtype(5'd3, 5'd1, 5'd2, 4'd1); // 应该得到的结果是 4
+    push_btn = 1;
+    #100;
+    push_btn = 0;
+    #1000;
+
+    // // 循环左移
+    dip_sw=`inst_rtype(5'd4, 5'd3, 5'd1, 4'd10); // 应该得到的结果是 32
+    push_btn = 1;
+    #100;
+    push_btn = 0;
+    #1000;
+
+    // // peek
+    for(int i=1;i<=5;i=i+1) begin
+      #100;
+      rd=i;
+      dip_sw=`inst_peek(rd, one);
+      push_btn = 1;
       #100;
       push_btn = 0;
-
       #1000;
     end
 
     // TODO: 随机测试各种指令
-    // 测试 Instr_rtype
-    for (int i = 1; i < 32; i = i + 1) begin
-      #100;
-      rd = i;   // only lower 5 bits
-      rs1 = $urandom_range(0, 32);
-      rs2 = $urandom_range(0, 32);
-      opcode = $urandom_range(0, 10);
-      dip_sw = `inst_rtype(rd, rs1, rs2, opcode);
-      push_btn = 1;
 
-      #100;
-      push_btn = 0;
-
-      #1000;
-    end
-    
-    // 测试 instr_peek
-    for (int i = 1; i < 32; i = i + 1) begin
-      #100;
-      rd = i;   // only lower 5 bits
-      imm = $urandom_range(0, 65536);
-      dip_sw = `inst_peek(rd, imm);
-      push_btn = 1;
-
-      #100;
-      push_btn = 0;
-
-      #1000;
-    end
-
-    #10000 $finish;
+    #100000 $finish;
   end
 
-  // 待测试用户设计
+
+  // 待测试用户设�?
   lab3_top dut (
-      .clk_50M(clk_50M),
+      .clk_50M(clk_50M), 
       .clk_11M0592(clk_11M0592),
       .push_btn(push_btn),
       .reset_btn(reset_btn),
@@ -143,10 +173,10 @@ module lab3_tb;
       .flash_we_n()
   );
 
-  // 时钟源
+  // 时钟�?
   clock osc (
       .clk_11M0592(clk_11M0592),
       .clk_50M    (clk_50M)
   );
-
+// todo 把内部输出接出去
 endmodule

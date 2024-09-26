@@ -23,10 +23,10 @@ module lab4_top (
     // BaseRAM 信号
     inout wire [31:0] base_ram_data,  // BaseRAM 数据，低 8 位与 CPLD 串口控制器共享
     output wire [19:0] base_ram_addr,  // BaseRAM 地址
-    output wire [3:0] base_ram_be_n,  // BaseRAM 字节使能，低有效。如果不使用字节使能，请保持为 0
+    output wire [3:0] base_ram_be_n,  // BaseRAM 字节使能，低有效。如果不使用字节使能，请保持为 0 ，for 部分写入 写入为 num & (~base_ram_be_n)
     output wire base_ram_ce_n,  // BaseRAM 片选，低有效
-    output wire base_ram_oe_n,  // BaseRAM 读使能，低有效
-    output wire base_ram_we_n,  // BaseRAM 写使能，低有效
+    output wire base_ram_oe_n,  // BaseRAM 读使能，低有效 读为 0 写为 1
+    output wire base_ram_we_n,  // BaseRAM 写使能，低有效 读为 1 写为 0
 
     // ExtRAM 信号
     inout wire [31:0] ext_ram_data,  // ExtRAM 数据

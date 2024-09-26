@@ -35,8 +35,8 @@ module register_file(
     reg [15:0] regs[0:31];
 
     // TODO write logic
-    always_ff @(posedge clk or negedge reset) begin
-        if(~reset) begin
+    always_ff @(posedge clk or posedge reset) begin
+        if(reset) begin
             rdata_a <= 16'b0;
             rdata_b <= 16'b0;
             for(int i = 0; i < 32; i = i + 1) begin

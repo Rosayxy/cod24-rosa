@@ -51,7 +51,9 @@ module controller (
   logic is_rtype, is_itype, is_peek, is_poke;
   logic [15:0] imm;
   logic [4:0] rd, rs1, rs2;
+  // logic [4:0] rs1,rs2;
   logic [3:0] opcode;
+
 
   always_comb begin
     is_rtype = (inst_reg[2:0] == 3'b001);
@@ -68,18 +70,21 @@ module controller (
 
   // 使用枚举定义状态列表，数据类型为 logic [3:0]
   typedef enum logic [3:0] {
-    ST_INIT,
-    ST_DECODE,
-    ST_CALC,
-    ST_READ_REG,
-    ST_WRITE_REG
+    ST_INIT,         // 0
+    ST_DECODE,       // 1
+    ST_CALC_1,       // 2
+    ST_CALC_2,       // 3
+    ST_READ_REG,     // 4
+    ST_READ_REG_2,   // 5
+    ST_READ_REG_3,   // 6
+    ST_WRITE_REG     // 7
   } state_t;
 
   // 状态机当前状态寄存器
   state_t state;
 
   // 状态机逻辑
-  always_ff @(posedge clk) begin
+  always_ff @(posedge clk or posedge reset) begin
     if (reset) begin
         // TODO: 复位各个输出信号
         state <= ST_INIT;
@@ -100,6 +105,9 @@ module controller (
             inst_reg <= dip_sw;
             state <= ST_DECODE;
           end
+          else begin
+            state <= ST_INIT;
+          end
         end
 
         ST_DECODE: begin
@@ -107,7 +115,7 @@ module controller (
             // 把寄存器地址交给寄存器堆，读取操作数
             rf_raddr_a <= rs1;
             rf_raddr_b <= rs2;
-            state <= ST_CALC;
+            state <= ST_CALC_1;
           end else if (is_peek) begin
             state <= ST_READ_REG;
           end else if (is_poke) begin
@@ -119,12 +127,16 @@ module controller (
           end
         end
 
-        ST_CALC: begin
-          // TODO: 并从 ALU 获取结果 ?
+        ST_CALC_1: begin
+          state <= ST_CALC_2;
+        end
+
+        ST_CALC_2: begin
+          // TODO: 并从 ALU 获取结果 ? 这个周期拿不到结果吧
           alu_a <= rf_rdata_a;
           alu_b <= rf_rdata_b;
           alu_op <= opcode;
-
+          
           state <= ST_WRITE_REG;
         end
 
@@ -137,7 +149,7 @@ module controller (
           end else if (is_poke) begin
             rf_waddr <= rd;
             rf_wdata <= imm;
-            rf_we <= 1;
+            rf_we <= 1; 
           end
           state <= ST_INIT;
         end
@@ -148,9 +160,19 @@ module controller (
             rf_raddr_a <= rd;
             leds <= rf_rdata_a;
           end
-          state <= ST_INIT;
+          state <= ST_READ_REG_2;
         end
 
+        ST_READ_REG_2: begin
+          leds <= rf_rdata_a;
+
+          state<=ST_READ_REG_3;
+        end
+
+        ST_READ_REG_3: begin
+          leds <= rf_rdata_a;
+          state <= ST_INIT;
+        end
         default: begin
           state <= ST_INIT;
         end

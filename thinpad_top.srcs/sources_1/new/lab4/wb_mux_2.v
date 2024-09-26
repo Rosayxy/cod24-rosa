@@ -79,7 +79,7 @@ module wb_mux_2 #
     output wire [ADDR_WIDTH-1:0]   wbs1_adr_o,    // ADR_O() address output
     input  wire [DATA_WIDTH-1:0]   wbs1_dat_i,    // DAT_I() data in
     output wire [DATA_WIDTH-1:0]   wbs1_dat_o,    // DAT_O() data out
-    output wire                    wbs1_we_o,     // WE_O write enable output
+    output wire                    wbs1_we_o,     // WE_O write enable output 写使能
     output wire [SELECT_WIDTH-1:0] wbs1_sel_o,    // SEL_O() select output
     output wire                    wbs1_stb_o,    // STB_O strobe output
     input  wire                    wbs1_ack_i,    // ACK_I acknowledge input
