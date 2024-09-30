@@ -77,7 +77,14 @@ module lab4_top (
     output wire       video_hsync,  // 行同步（水平同步）信号
     output wire       video_vsync,  // 场同步（垂直同步）信号
     output wire       video_clk,    // 像素时钟输出
-    output wire       video_de      // 行数据有效信号，用于区分消隐区
+    output wire       video_de,      // 行数据有效信号，用于区分消隐区
+    
+    
+    // debug info
+    output wire [31:0] test_error_round,  // 数据错误轮次
+    output wire [31:0] test_error_addr,  // 数据错误地址
+    output wire [31:0] test_error_read_data,  // 错误地址读出的数据
+    output wire [31:0] test_error_expected_data  // 错误地址预期的数据
 );
 
   /* =========== Demo code begin =========== */
@@ -139,6 +146,7 @@ module lab4_top (
   assign leds[1] = test_error;
   assign leds[15:2] = '0;
 
+  // TODO 把这玩意接出去！！
   // 详细结果信息，信号仅用于仿真查看，不连接外部硬件
   logic [31:0] test_error_round;  // 数据错误轮次
   logic [31:0] test_error_addr;  // 数据错误地址
@@ -275,6 +283,7 @@ module lab4_top (
       .sram_oe_n(base_ram_oe_n),
       .sram_we_n(base_ram_we_n),
       .sram_be_n(base_ram_be_n)
+
   );
 
   sram_controller #(
@@ -301,6 +310,7 @@ module lab4_top (
       .sram_oe_n(ext_ram_oe_n),
       .sram_we_n(ext_ram_we_n),
       .sram_be_n(ext_ram_be_n)
+
   );
   /* =========== Lab4 Slaves end =========== */
 

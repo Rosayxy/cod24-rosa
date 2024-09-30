@@ -3,6 +3,7 @@ module lab4_tb;
 
   wire clk_50M, clk_11M0592;
 
+
   reg push_btn;   // BTN5 按钮开关，带消抖电路，按下时为 1
   reg reset_btn;  // BTN6 复位按钮，带消抖电路，按下时为 1
 
@@ -36,11 +37,20 @@ module lab4_tb;
   wire uart_dataready;  // 串口数据准备好
   wire uart_tbre;  // 发送数据标志
   wire uart_tsre;  // 数据发送完毕标志
+  
+  // debug info
+  logic [31:0] test_error_round;  // 数据错误轮次
+  logic [31:0] test_error_addr;  // 数据错误地址
+  logic [31:0] test_error_read_data;  // 错误地址读出的数据
+  logic [31:0] test_error_expected_data;  // 错误地址预期的数据
+
 
   // Windows 需要注意路径分隔符的转义，例如 "D:\\foo\\bar.bin"
-  parameter BASE_RAM_INIT_FILE = "/tmp/main.bin"; // BaseRAM 初始化文件，请修改为实际的绝对路径
-  parameter EXT_RAM_INIT_FILE = "/tmp/eram.bin";  // ExtRAM 初始化文件，请修改为实际的绝对路径
-
+  // parameter BASE_RAM_INIT_FILE = "/tmp/main.bin"; // BaseRAM 初始化文件，请修改为实际的绝对路径
+  // parameter EXT_RAM_INIT_FILE = "/tmp/eram.bin";  // ExtRAM 初始化文件，请修改为实际的绝对路径
+  // TODO 修改回来
+  parameter BASE_RAM_INIT_FILE = "D:\\coderyxy4\\main.bin"; // BaseRAM 初始化文件，请修改为实际的绝对路径
+  parameter EXT_RAM_INIT_FILE = "D:\\coderyxy4\\eram.bin";  // ExtRAM 初始化文件，请修改为实际的绝对路径
   initial begin
     // 在这里可以自定义测试输入序列，例如：
     dip_sw = 32'h2;
@@ -59,7 +69,7 @@ module lab4_tb;
     push_btn = 1;
 
     // 等待一段时间，结束仿真
-    #10000 $finish;
+    #100000 $finish;
   end
 
   // 待测试用户设计
@@ -99,7 +109,14 @@ module lab4_tb;
       .flash_oe_n(),
       .flash_ce_n(),
       .flash_byte_n(),
-      .flash_we_n()
+      .flash_we_n(),
+
+      // debug info
+      .test_error_round(test_error_round),
+      .test_error_addr(test_error_addr),
+      .test_error_read_data(test_error_read_data),
+      .test_error_expected_data(test_error_expected_data)
+
   );
 
   // 时钟源

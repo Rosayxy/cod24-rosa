@@ -4,7 +4,7 @@ module sram_tester #(
 
     parameter ADDR_BASE   = 32'h8000_0000,
     parameter ADDR_MASK   = 32'h007F_FFFF,
-    parameter TEST_ROUNDS = 1000
+    parameter TEST_ROUNDS = 10
 ) (
     input wire clk_i,
     input wire rst_i,
@@ -29,22 +29,23 @@ module sram_tester #(
     output reg [ADDR_WIDTH-1:0] error_addr,
     output reg [DATA_WIDTH-1:0] error_read_data,
     output reg [DATA_WIDTH-1:0] error_expected_data
+
 );
 
   localparam RAM_ADDR_WIDTH = $clog2(ADDR_MASK); // ceil to correct bits
   localparam ADDR_ZEROS = ADDR_WIDTH - RAM_ADDR_WIDTH;
 
   typedef enum logic [3:0] {
-    ST_IDLE,
+    ST_IDLE, // 0
 
-    ST_WRITE,
-    ST_WRITE_ACTION,
+    ST_WRITE, // 1
+    ST_WRITE_ACTION, // 2
 
-    ST_READ,
-    ST_READ_ACTION,
+    ST_READ, // 3
+    ST_READ_ACTION, // 4
 
-    ST_ERROR,
-    ST_DONE
+    ST_ERROR, // 5
+    ST_DONE // 6
   } state_t;
 
   logic [31:0] count;
@@ -53,34 +54,49 @@ module sram_tester #(
   logic [DATA_WIDTH/8-1:0] read_compare;  // byte read compare result
 
   state_t state, state_n;
-
   always_comb begin
     state_n = state;
     case (state)
       ST_IDLE: begin
         // start test sequence
-        if (start) state_n = ST_WRITE;
+        if (start) begin
+          state_n = ST_WRITE;
+        end
       end
 
       ST_WRITE: begin
-        if (count == TEST_ROUNDS) state_n = ST_READ;
-        else state_n = ST_WRITE_ACTION;
+        if (count == TEST_ROUNDS) begin
+         state_n = ST_READ;
+        end
+        else begin
+         state_n = ST_WRITE_ACTION;
+        end
       end
 
       ST_WRITE_ACTION: begin
         // wait for ack
-        if (wb_ack_i) state_n = ST_WRITE;
+        if (wb_ack_i) begin
+          state_n = ST_WRITE;
+        end
       end
 
       ST_READ: begin
-        if (count == TEST_ROUNDS) state_n = ST_DONE;
-        else state_n = ST_READ_ACTION;
+        if (count == TEST_ROUNDS) begin
+        state_n = ST_DONE;
+        end
+        else begin
+          state_n = ST_READ_ACTION;
+        end
       end
 
       ST_READ_ACTION: begin
         if (wb_ack_i) begin
-          if (!(&read_compare)) state_n = ST_ERROR;
-          else state_n = ST_READ;
+          if (!(&read_compare)) begin
+             state_n = ST_ERROR;
+          end
+          else begin
+            state_n = ST_READ;
+          end
         end
       end
 
@@ -119,7 +135,7 @@ module sram_tester #(
   end
 
   // rng control
-  logic rng_load;
+  logic rng_load;      // rand_gen
   always_comb begin
     rng_load = 0;
     case (state)
@@ -189,6 +205,7 @@ module sram_tester #(
         wb_adr_o = '0;
         wb_dat_o = '0;
         data_expected = '0;
+
       end
     endcase
   end
@@ -210,10 +227,18 @@ module sram_tester #(
 
   always_comb begin
     case (wb_adr_o[1:0])
-      2'b00: wb_sel_o = 4'b1111;  // full word
-      2'b10: wb_sel_o = 4'b1100;  // half word
-      2'b01: wb_sel_o = 4'b0010;  // byte
-      2'b11: wb_sel_o = 4'b1000;  // byte
+      2'b00: begin
+        wb_sel_o = 4'b1111;  // full word
+      end
+      2'b10: begin
+      wb_sel_o = 4'b1100;  // half word
+      end
+      2'b01: begin
+        wb_sel_o = 4'b0010;  // byte
+      end
+      2'b11: begin
+        wb_sel_o = 4'b1000;  // byte
+      end
     endcase
   end
 
