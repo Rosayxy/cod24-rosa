@@ -103,25 +103,25 @@ module thinpad_top (
     else reset_of_clk10M <= 1'b0;
   end
 
-  always_ff @(posedge clk_10M or posedge reset_of_clk10M) begin
-    if (reset_of_clk10M) begin
-      // Your Code
-    end else begin
-      // Your Code
-    end
-  end
+  // always_ff @(posedge clk_10M or posedge reset_of_clk10M) begin
+  //   if (reset_of_clk10M) begin
+  //     // Your Code
+  //   end else begin
+  //     // Your Code
+  //   end
+  // end
 
-  // 不使用内存、串口时，禁用其使能信号
-  assign base_ram_ce_n = 1'b1;
-  assign base_ram_oe_n = 1'b1;
-  assign base_ram_we_n = 1'b1;
+  // // 不使用内存、串口时，禁用其使能信号
+  // assign base_ram_ce_n = 1'b1;
+  // assign base_ram_oe_n = 1'b1;
+  // assign base_ram_we_n = 1'b1;
 
-  assign ext_ram_ce_n = 1'b1;
-  assign ext_ram_oe_n = 1'b1;
-  assign ext_ram_we_n = 1'b1;
+  // assign ext_ram_ce_n = 1'b1;
+  // assign ext_ram_oe_n = 1'b1;
+  // assign ext_ram_we_n = 1'b1;
 
-  assign uart_rdn = 1'b1;
-  assign uart_wrn = 1'b1;
+  // assign uart_rdn = 1'b1;
+  // assign uart_wrn = 1'b1;
 
   // 数码管连接关系示意图，dpy1 同理
   // p=dpy0[0] // ---a---
@@ -221,5 +221,260 @@ module thinpad_top (
       .data_enable(video_de)
   );
   /* =========== Demo code end =========== */
+
+// start of code
+  logic sys_clk;
+  logic sys_rst;
+
+  assign sys_clk = clk_10M;
+  assign sys_rst = reset_of_clk10M;
+
+  // 本实验不使用 CPLD 串口，禁用防止总线冲突
+  assign uart_rdn = 1'b1;
+  assign uart_wrn = 1'b1;
+
+  // cpu => Wishbone MUX (Slave)
+  logic        wbm_cyc_o;
+  logic        wbm_stb_o;
+  logic        wbm_ack_i;
+  logic [31:0] wbm_adr_o;
+  logic [31:0] wbm_dat_o;
+  logic [31:0] wbm_dat_i;
+  logic [ 3:0] wbm_sel_o;
+  logic        wbm_we_o;
+
+  cpu #(
+      .ADDR_WIDTH(32),
+      .DATA_WIDTH(32)
+  ) my_cpu (
+      .clk_i(sys_clk),
+      .rst_i(sys_rst),
+
+      // TODO: 添加需要的控制信号，例如按键开关？
+      .push_btn(push_btn),
+      .reset_btn(reset_btn),
+      .dip_sw(dip_sw),
+      .leds(leds),
+      // wishbone master
+      .wb_cyc_o(wbm_cyc_o),
+      .wb_stb_o(wbm_stb_o),
+      .wb_ack_i(wbm_ack_i),
+      .wb_adr_o(wbm_adr_o),
+      .wb_dat_o(wbm_dat_o),
+      .wb_dat_i(wbm_dat_i),
+      .wb_sel_o(wbm_sel_o),
+      .wb_we_o (wbm_we_o)
+
+  );
+   /* =========== CONNECT WITH REGFILE =========== */
+
+   wire [4:0] raddr_a;
+   wire [4:0] raddr_b;
+   wire [4:0] waddr;
+   wire [31:0] wdata;
+   wire [4:0] we;
+   wire [31:0] rdata_a;
+   wire [31:0] rdata_b;
+
+    register_file_32 regfile (
+        .clk(sys_clk),
+        .reset(sys_rst),
+
+        .raddr_a(raddr_a),
+        .raddr_b(raddr_b),
+        .waddr(waddr),
+        .wdata(wdata),
+        .we(we),
+        .rdata_a(rdata_a),
+        .rdata_b(rdata_b)
+    );
+  /* =========== CONNECT WITH REGFILE END =========== */
+
+  /* =========== CONNECT WITH ALU =========== */
+
+  wire [31:0] alu_a;
+  wire [31:0] alu_b;
+  wire [3:0] alu_op;
+  reg [31:0] alu_res;
+
+  alu_32 alu (
+      .a(alu_a),
+      .b(alu_b),
+      .op(alu_op),
+      .y(alu_res)
+  );
+  /* =========== CONNECT WITH ALU END =========== */
+
+  /* =========== Final MUX begin =========== */
+  // Wishbone MUX (Masters) => bus slaves
+  logic wbs0_cyc_o;
+  logic wbs0_stb_o;
+  logic wbs0_ack_i;
+  logic [31:0] wbs0_adr_o;
+  logic [31:0] wbs0_dat_o;
+  logic [31:0] wbs0_dat_i;
+  logic [3:0] wbs0_sel_o;
+  logic wbs0_we_o;
+
+  logic wbs1_cyc_o;
+  logic wbs1_stb_o;
+  logic wbs1_ack_i;
+  logic [31:0] wbs1_adr_o;
+  logic [31:0] wbs1_dat_o;
+  logic [31:0] wbs1_dat_i;
+  logic [3:0] wbs1_sel_o;
+  logic wbs1_we_o;
+
+  logic wbs2_cyc_o;
+  logic wbs2_stb_o;
+  logic wbs2_ack_i;
+  logic [31:0] wbs2_adr_o;
+  logic [31:0] wbs2_dat_o;
+  logic [31:0] wbs2_dat_i;
+  logic [3:0] wbs2_sel_o;
+  logic wbs2_we_o;
+
+  wb_mux_3 wb_mux (
+      .clk(sys_clk),
+      .rst(sys_rst),
+
+      // Master interface (to Lab5 master)
+      .wbm_adr_i(wbm_adr_o),
+      .wbm_dat_i(wbm_dat_o),
+      .wbm_dat_o(wbm_dat_i),
+      .wbm_we_i (wbm_we_o),
+      .wbm_sel_i(wbm_sel_o),
+      .wbm_stb_i(wbm_stb_o),
+      .wbm_ack_o(wbm_ack_i),
+      .wbm_err_o(),
+      .wbm_rty_o(),
+      .wbm_cyc_i(wbm_cyc_o),
+
+      // Slave interface 0 (to BaseRAM controller)
+      // Address range: 0x8000_0000 ~ 0x803F_FFFF
+      .wbs0_addr    (32'h8000_0000),
+      .wbs0_addr_msk(32'hFFC0_0000),
+
+      .wbs0_adr_o(wbs0_adr_o),
+      .wbs0_dat_i(wbs0_dat_i),
+      .wbs0_dat_o(wbs0_dat_o),
+      .wbs0_we_o (wbs0_we_o),
+      .wbs0_sel_o(wbs0_sel_o),
+      .wbs0_stb_o(wbs0_stb_o),
+      .wbs0_ack_i(wbs0_ack_i),
+      .wbs0_err_i('0),
+      .wbs0_rty_i('0),
+      .wbs0_cyc_o(wbs0_cyc_o),
+
+      // Slave interface 1 (to ExtRAM controller)
+      // Address range: 0x8040_0000 ~ 0x807F_FFFF
+      .wbs1_addr    (32'h8040_0000),
+      .wbs1_addr_msk(32'hFFC0_0000),
+
+      .wbs1_adr_o(wbs1_adr_o),
+      .wbs1_dat_i(wbs1_dat_i),
+      .wbs1_dat_o(wbs1_dat_o),
+      .wbs1_we_o (wbs1_we_o),
+      .wbs1_sel_o(wbs1_sel_o),
+      .wbs1_stb_o(wbs1_stb_o),
+      .wbs1_ack_i(wbs1_ack_i),
+      .wbs1_err_i('0),
+      .wbs1_rty_i('0),
+      .wbs1_cyc_o(wbs1_cyc_o),
+
+      // Slave interface 2 (to UART controller)
+      // Address range: 0x1000_0000 ~ 0x1000_FFFF
+      .wbs2_addr    (32'h1000_0000),
+      .wbs2_addr_msk(32'hFFFF_0000),
+
+      .wbs2_adr_o(wbs2_adr_o),
+      .wbs2_dat_i(wbs2_dat_i),
+      .wbs2_dat_o(wbs2_dat_o),
+      .wbs2_we_o (wbs2_we_o),
+      .wbs2_sel_o(wbs2_sel_o),
+      .wbs2_stb_o(wbs2_stb_o),
+      .wbs2_ack_i(wbs2_ack_i),
+      .wbs2_err_i('0),
+      .wbs2_rty_i('0),
+      .wbs2_cyc_o(wbs2_cyc_o)
+  );
+
+  /* =========== Final MUX end =========== */
+
+  /* =========== Final Slaves begin =========== */
+  sram_controller #(
+      .SRAM_ADDR_WIDTH(20),
+      .SRAM_DATA_WIDTH(32)
+  ) sram_controller_base (
+      .clk_i(sys_clk),
+      .rst_i(sys_rst),
+
+      // Wishbone slave (to MUX)
+      .wb_cyc_i(wbs0_cyc_o),
+      .wb_stb_i(wbs0_stb_o),
+      .wb_ack_o(wbs0_ack_i),
+      .wb_adr_i(wbs0_adr_o),
+      .wb_dat_i(wbs0_dat_o),
+      .wb_dat_o(wbs0_dat_i),
+      .wb_sel_i(wbs0_sel_o),
+      .wb_we_i (wbs0_we_o),
+
+      // To SRAM chip
+      .sram_addr(base_ram_addr),
+      .sram_data(base_ram_data),
+      .sram_ce_n(base_ram_ce_n),
+      .sram_oe_n(base_ram_oe_n),
+      .sram_we_n(base_ram_we_n),
+      .sram_be_n(base_ram_be_n)
+  );
+
+  sram_controller #(
+      .SRAM_ADDR_WIDTH(20),
+      .SRAM_DATA_WIDTH(32)
+  ) sram_controller_ext (
+      .clk_i(sys_clk),
+      .rst_i(sys_rst),
+
+      // Wishbone slave (to MUX)
+      .wb_cyc_i(wbs1_cyc_o),
+      .wb_stb_i(wbs1_stb_o),
+      .wb_ack_o(wbs1_ack_i),
+      .wb_adr_i(wbs1_adr_o),
+      .wb_dat_i(wbs1_dat_o),
+      .wb_dat_o(wbs1_dat_i),
+      .wb_sel_i(wbs1_sel_o),
+      .wb_we_i (wbs1_we_o),
+
+      // To SRAM chip
+      .sram_addr(ext_ram_addr),
+      .sram_data(ext_ram_data),
+      .sram_ce_n(ext_ram_ce_n),
+      .sram_oe_n(ext_ram_oe_n),
+      .sram_we_n(ext_ram_we_n),
+      .sram_be_n(ext_ram_be_n)
+  );
+
+  // 串口控制器模块
+  // NOTE: 如果修改系统时钟频率，也需要修改此处的时钟频率参数
+  uart_controller #(
+      .CLK_FREQ(10_000_000),
+      .BAUD    (115200)
+  ) uart_controller (
+      .clk_i(sys_clk),
+      .rst_i(sys_rst),
+
+      .wb_cyc_i(wbs2_cyc_o),
+      .wb_stb_i(wbs2_stb_o),
+      .wb_ack_o(wbs2_ack_i),
+      .wb_adr_i(wbs2_adr_o),
+      .wb_dat_i(wbs2_dat_o),
+      .wb_dat_o(wbs2_dat_i),
+      .wb_sel_i(wbs2_sel_o),
+      .wb_we_i (wbs2_we_o),
+
+      // to UART pins
+      .uart_txd_o(txd),
+      .uart_rxd_i(rxd)
+  );
 
 endmodule

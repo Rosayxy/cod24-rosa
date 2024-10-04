@@ -78,6 +78,7 @@ module lab5_top (
     output wire       video_vsync,  // 场同步（垂直同步）信号
     output wire       video_clk,    // 像素时钟输出
     output wire       video_de      // 行数据有效信号，用于区分消隐区
+    
 );
 
   /* =========== Demo code begin =========== */
@@ -137,7 +138,7 @@ module lab5_top (
       .push_btn(push_btn),
       .reset_btn(reset_btn),
       .dip_sw(dip_sw),
-
+      .leds(leds),
       // wishbone master
       .wb_cyc_o(wbm_cyc_o),
       .wb_stb_o(wbm_stb_o),
@@ -147,6 +148,7 @@ module lab5_top (
       .wb_dat_i(wbm_dat_i),
       .wb_sel_o(wbm_sel_o),
       .wb_we_o (wbm_we_o)
+
   );
 
   /* =========== Lab5 Master end =========== */

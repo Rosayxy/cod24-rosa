@@ -38,12 +38,12 @@ module lab5_tb;
   wire uart_tsre;  // 数据发送完毕标志
 
   // Windows 需要注意路径分隔符的转义，例如 "D:\\foo\\bar.bin"
-  parameter BASE_RAM_INIT_FILE = "/tmp/main.bin"; // BaseRAM 初始化文件，请修改为实际的绝对路径
-  parameter EXT_RAM_INIT_FILE = "/tmp/eram.bin";  // ExtRAM 初始化文件，请修改为实际的绝对路径
+  parameter BASE_RAM_INIT_FILE = "D:\\coderyxy4\\main.bin"; // BaseRAM 初始化文件，请修改为实际的绝对路径
+  parameter EXT_RAM_INIT_FILE = "D:\\coderyxy4\\eram.bin";  // ExtRAM 初始化文件，请修改为实际的绝对路径
 
   initial begin
     // 在这里可以自定义测试输入序列，例如：
-    dip_sw = 32'h2;
+    dip_sw = 32'h8000_1000;
     touch_btn = 0;
     reset_btn = 0;
     push_btn = 0;
@@ -65,11 +65,27 @@ module lab5_tb;
     uart.pc_send_byte(8'h32); // ASCII '2'
     #10000;
     uart.pc_send_byte(8'h33); // ASCII '3'
-
+    #10000;
+    uart.pc_send_byte(8'h34); // ASCII '4'
+    #10000;
+    uart.pc_send_byte(8'h35); // ASCII '5'
+    #10000;
+    uart.pc_send_byte(8'h36); // ASCII '6'
+    #10000;
+    uart.pc_send_byte(8'h38); // ASCII '7'
+    #10000;
+    uart.pc_send_byte(8'h39); // ASCII '8'
+    #10000;
+    uart.pc_send_byte(8'h41); // ASCII '9'
+    #10000;
+    uart.pc_send_byte(8'h42); // ASCII ':'
+    #10000;
+    uart.pc_send_byte(8'h43); // ASCII ';'
+    #10000;
     // PC 接收到数据后，会在仿真窗口中打印出数据
 
     // 等待一段时间，结束仿真
-    #10000 $finish;
+    #100000 $finish;
   end
 
   // 待测试用户设计
@@ -110,6 +126,7 @@ module lab5_tb;
       .flash_ce_n(),
       .flash_byte_n(),
       .flash_we_n()
+
   );
 
   // 时钟源

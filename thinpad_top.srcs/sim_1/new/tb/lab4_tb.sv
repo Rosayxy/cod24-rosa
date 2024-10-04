@@ -44,6 +44,25 @@ module lab4_tb;
   logic [31:0] test_error_read_data;  // 错误地址读出的数据
   logic [31:0] test_error_expected_data;  // 错误地址预期的数据
 
+  reg [2:0] base_state_dbg;
+  reg [19:0] base_addr_dbg;
+  reg [31:0] base_data_dbg;
+  reg [3:0] base_be_n_dbg;
+  reg [31:0] base_data_i_comb_dbg;
+  reg base_data_t_comb_dbg;
+  reg base_data_o_comb_dbg;
+  reg base_wb_ack_o_dbg;
+  reg [31:0] base_wb_dat_o_dbg;
+
+  reg [2:0] ext_state_dbg;
+  reg [19:0] ext_addr_dbg;
+  reg [31:0] ext_data_dbg;
+  reg [3:0] ext_be_n_dbg;
+  reg [31:0] ext_data_i_comb_dbg;
+  reg ext_data_t_comb_dbg;
+  reg ext_data_o_comb_dbg;
+  reg ext_wb_ack_o_dbg;
+  reg [31:0] ext_wb_dat_o_dbg;
 
   // Windows 需要注意路径分隔符的转义，例如 "D:\\foo\\bar.bin"
   // parameter BASE_RAM_INIT_FILE = "/tmp/main.bin"; // BaseRAM 初始化文件，请修改为实际的绝对路径
@@ -115,8 +134,28 @@ module lab4_tb;
       .test_error_round(test_error_round),
       .test_error_addr(test_error_addr),
       .test_error_read_data(test_error_read_data),
-      .test_error_expected_data(test_error_expected_data)
+      .test_error_expected_data(test_error_expected_data),
 
+      // more debug info
+      .base_state_dbg(base_state_dbg),
+      .base_sram_addr_dbg(base_addr_dbg),
+      .base_sram_data_dbg(base_data_dbg),
+      .base_sram_be_n_dbg(base_be_n_dbg),
+      .base_sram_data_i_comb_dbg(base_data_i_comb_dbg),
+      .base_sram_data_t_comb_dbg(base_data_t_comb_dbg),
+      .base_sram_data_o_comb_dbg(base_data_o_comb_dbg),
+      .base_wb_ack_o_dbg(base_wb_ack_o_dbg),
+      .base_wb_dat_o_dbg(base_wb_dat_o_dbg),
+
+      .ext_state_dbg(ext_state_dbg),
+      .ext_sram_addr_dbg(ext_addr_dbg),
+      .ext_sram_data_dbg(ext_data_dbg),
+      .ext_sram_be_n_dbg(ext_be_n_dbg),
+      .ext_sram_data_i_comb_dbg(ext_data_i_comb_dbg),
+      .ext_sram_data_t_comb_dbg(ext_data_t_comb_dbg),
+      .ext_sram_data_o_comb_dbg(ext_data_o_comb_dbg),
+      .ext_wb_ack_o_dbg(ext_wb_ack_o_dbg),
+      .ext_wb_dat_o_dbg(ext_wb_dat_o_dbg)
   );
 
   // 时钟源

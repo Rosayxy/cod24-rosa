@@ -42,19 +42,19 @@ module sram_controller #(
       STATE_DONE     // 6
     } state_t;
 
-    reg ram_ce_n_reg;
-    reg ram_oe_n_reg;
-    reg ram_we_n_reg;
+    // reg ram_ce_n_reg;
+    // reg ram_oe_n_reg;
+    // reg ram_we_n_reg;
 
-    // initial begin
-    //   ram_ce_n_reg = 1'b1;
-    //   ram_oe_n_reg = 1'b1;
-    //   ram_we_n_reg = 1'b1;
-    // end
+    // // initial begin
+    // //   ram_ce_n_reg = 1'b1;
+    // //   ram_oe_n_reg = 1'b1;
+    // //   ram_we_n_reg = 1'b1;
+    // // end
 
-    assign sram_ce_n = ram_ce_n_reg;
-    assign sram_oe_n = ram_oe_n_reg;
-    assign sram_we_n = ram_we_n_reg;
+    // assign sram_ce_n = ram_ce_n_reg;
+    // assign sram_oe_n = ram_oe_n_reg;
+    // assign sram_we_n = ram_we_n_reg;
 
     // step1 实现三态门的 wrapper 
     wire [SRAM_DATA_WIDTH-1:0] sram_data_i_comb; // ram 的输出 todo 到了对应阶段用他给 wb_dat_o 赋值
@@ -83,11 +83,14 @@ module sram_controller #(
   always_ff @ (posedge clk_i or posedge rst_i) begin
       if (rst_i) begin
           state <= STATE_IDLE;
-          ram_ce_n_reg <= 1'b1;
-          ram_oe_n_reg <= 1'b1;
-          ram_we_n_reg <= 1'b1;
+          sram_ce_n <= 1'b1;
+          sram_oe_n <= 1'b1;
+          sram_be_n <= 1'b1;
+          sram_we_n <= 1'b1;
           wb_ack_o <= 1'b0;
-          // assign debug output
+          wb_dat_o <= 0;
+          sram_addr <= 0;
+
       end else begin
           case (state)
               STATE_IDLE: begin
@@ -98,7 +101,7 @@ module sram_controller #(
                           sram_oe_n <= 1'b1;
                           sram_ce_n <= 1'b0;
                           sram_we_n <= 1'b1;
-                          sram_be_n <= 0;
+                          sram_be_n <= ~wb_sel_i;
                           state <= STATE_WRITE;
                           sram_data_t_comb <= 0;
                           wb_ack_o <= 1'b0;
@@ -107,11 +110,12 @@ module sram_controller #(
                           sram_addr <= wb_adr_i/4;
                           sram_oe_n <= 0;
                           sram_ce_n <= 0;
-                          sram_we_n <= 0; // **改了这里 不确定和文档上是否一致**
-                          sram_be_n <= 0;
+                          sram_we_n <= 1'b1; // **改了这里 不确定和文档上是否一致 update: 看文档 得是1！**
+                          sram_be_n <= ~wb_sel_i; // **在实验5的时候改了这里和上面**
                           state <= STATE_READ;
                           sram_data_t_comb <= 1;
                           wb_ack_o <= 0;
+
                       end
                   end
               end
@@ -134,22 +138,26 @@ module sram_controller #(
               STATE_WRITE: begin
                   sram_we_n <= 0;
                   state <= STATE_WRITE_2;
+                  
               end
 
               STATE_WRITE_2: begin
                   sram_we_n <= 1;
                   state <= STATE_WRITE_3;
+
               end
 
               STATE_WRITE_3: begin
                   wb_ack_o <= 1;
                   sram_ce_n <= 1;
                   state <= STATE_DONE;
+
               end
 
               STATE_DONE: begin
                   state <= STATE_IDLE;
                   wb_ack_o <= 0;
+
               end
 
           endcase
