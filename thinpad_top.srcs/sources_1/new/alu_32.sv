@@ -28,7 +28,7 @@ module alu_32(
     input wire [3:0] op,
     output reg [31:0] y
     );
-    // TODO write logic
+    // TODO 对照 alu.sv 改一下吧
     always_comb begin
         case(op)
             4'b0001: y = a + b;

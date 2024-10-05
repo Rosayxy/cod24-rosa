@@ -72,60 +72,29 @@ module lab3_tb;
     //   #1000;
     // end
 
-    dip_sw=`inst_poke(5'd1, 16'd3);
+    dip_sw=`inst_poke(5'd16, 16'hfdd5);
     push_btn = 1;
     #100;
     push_btn = 0;
     #1000;
     
-    dip_sw=`inst_poke(5'd2, 16'd1);
-    push_btn = 1;
+    dip_sw = `inst_peek(5'd16,one);
+    push_btn=1;
     #100;
-    push_btn = 0;
-    #1000;
-
-    dip_sw=`inst_poke(5'd3, 16'd2);
-    push_btn = 1;
-    #100;
-    push_btn = 0;
-    #1000;
-
-    dip_sw=`inst_poke(5'd4, 16'd4);
-    push_btn = 1;
-    #100;
-    push_btn = 0;
-    #1000;
-
-    dip_sw=`inst_poke(5'd5, 16'd5);
-    push_btn = 1;
-    #100;
-    push_btn = 0;
+    push_btn=0;
     #1000;
     // // 求和
-    dip_sw=`inst_rtype(5'd3, 5'd1, 5'd2, 4'd1); // 应该得到的结果是 4
+    dip_sw=`inst_rtype(5'd16, 5'd16, 5'd16, 4'd9); // 应该得到的结果是 4
     push_btn = 1;
     #100;
     push_btn = 0;
     #1000;
 
-    // // 循环左移
-    dip_sw=`inst_rtype(5'd4, 5'd3, 5'd1, 4'd10); // 应该得到的结果是 32
-    push_btn = 1;
+    dip_sw=`inst_peek(5'd16, one);
+    push_btn=1;
     #100;
-    push_btn = 0;
+    push_btn=0;
     #1000;
-
-    // // peek
-    for(int i=1;i<=5;i=i+1) begin
-      #100;
-      rd=i;
-      dip_sw=`inst_peek(rd, one);
-      push_btn = 1;
-      #100;
-      push_btn = 0;
-      #1000;
-    end
-
     // TODO: 随机测试各种指令
 
     #100000 $finish;

@@ -77,7 +77,9 @@ module controller (
     ST_READ_REG,     // 4
     ST_READ_REG_2,   // 5
     ST_READ_REG_3,   // 6
-    ST_WRITE_REG     // 7
+    ST_WRITE_REG,     // 7
+    ST_WRITE_REG_2,   // 8
+    ST_WRITE_REG_3   // 9
   } state_t;
 
   // 状态机当前状态寄存器
@@ -151,6 +153,15 @@ module controller (
             rf_wdata <= imm;
             rf_we <= 1; 
           end
+          state <= ST_WRITE_REG_2;
+        end
+
+        ST_WRITE_REG_2: begin
+          state<=ST_WRITE_REG_3;
+        end
+
+        ST_WRITE_REG_3: begin
+          rf_we <= 0;
           state <= ST_INIT;
         end
 
@@ -165,7 +176,6 @@ module controller (
 
         ST_READ_REG_2: begin
           leds <= rf_rdata_a;
-
           state<=ST_READ_REG_3;
         end
 

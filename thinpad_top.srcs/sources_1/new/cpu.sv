@@ -99,7 +99,29 @@ regfile_state_t regfile_state;
   logic [4:0] rd, rs1, rs2;
   logic [15:0] rs1_val, rs2_val, rd_val;
   logic exe_arith_done; // 标志是赋值的状态还是从 alu 取数的状态
-  
+  logic[4:0] shift_val; // 因为非对齐访问，取值回来之后需要右移的位数
+  logic [11:0] sram_addr_tmp; // 临时算出的 sram_addr
+  always_comb begin
+    case (sram_addr_tmp%4)
+      2'b00: shift_val = 5'd0;
+      2'b01: shift_val = 5'd8;
+      2'b10: shift_val = 5'd16;
+      2'b11: shift_val = 5'd24;
+    endcase
+  end
+
+  // 计算sel_o todo 思考特殊情况：非对齐访问中 store 分两次写入
+  always_comb begin
+    if (ty == LB||ty==SB) begin
+      case(sram_addr_tmp%4)
+      2'b00: wb_sel_o = 4'b0001;
+      2'b01: wb_sel_o = 4'b0010;
+      2'b10: wb_sel_o = 4'b0100;
+      2'b11: wb_sel_o = 4'b1000;
+      endcase
+    end
+  end
+
   always_comb begin
     case(instr_reg[6:0])
       7'b0110111:begin
@@ -177,6 +199,7 @@ always_ff @ (posedge clk or posedge rst) begin
         rd_val <= 16'h0000;
         regfile_state <= STATE_ASSIGN;
         exe_arith_done <= 1'b0;
+        sram_addr_tmp <= 12'h0000;
     end
     else begin
         case(state)
@@ -276,8 +299,8 @@ always_ff @ (posedge clk or posedge rst) begin
               end
             end
             STATE_EXE_LD: begin
-              // 算出 load 的偏移 此外该步也要处理非对齐
-
+              // 算 base_reg + offset 算 sel_o 考虑到非对齐访问，最后到某个阶段要右移
+              
             end
         endcase
     end
