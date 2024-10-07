@@ -86,7 +86,7 @@ module lab3_tb;
     // // 求和
     dip_sw=`inst_rtype(5'd16, 5'd16, 5'd16, 4'd9); // 应该得到的结果是 4
     push_btn = 1;
-    #100;
+    #1000;
     push_btn = 0;
     #1000;
 

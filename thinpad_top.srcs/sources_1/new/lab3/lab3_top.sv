@@ -113,7 +113,13 @@ module lab3_top (
   wire rf_we;
   wire [15:0] alu_a, alu_b, alu_y;
   wire [3:0] alu_op;
-  
+  reg trigger_out;
+
+  trigger my_trigger(
+    .clk(clk_10M),
+    .push(push_btn),
+    .out(trigger_out)
+  );
   // TODO: 实验模块例化 改成了 10M 的时钟 看看是不是还有 bug
   controller my_controller(
     .clk(clk_10M),
@@ -129,7 +135,7 @@ module lab3_top (
     .alu_b(alu_b),
     .alu_op(alu_op),
     .alu_y(alu_y),
-    .step(push_btn),
+    .step(trigger_out),
     .dip_sw(dip_sw),
     .leds(leds)
   );

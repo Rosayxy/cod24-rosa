@@ -67,6 +67,7 @@ module cpu #(
     STATE_EXE_BEQ, // 4
     STATE_EXE_LD,
     STATE_READ_LD,
+    STATE_REG_LD,   // load 的值写回 regfile
     STATE_EXE_ST, // store
     STATE_WRITE_ST // store
   } state_t;
@@ -97,10 +98,15 @@ regfile_state_t regfile_state;
   logic [12:0] imm; // 12 or 13 bits
   logic [31:0] lui_imm;
   logic [4:0] rd, rs1, rs2;
-  logic [15:0] rs1_val, rs2_val, rd_val;
+  logic [31:0] rs1_val, rs2_val, rd_val;
   logic exe_arith_done; // 标志是赋值的状态还是从 alu 取数的状态
   logic[4:0] shift_val; // 因为非对齐访问，取值回来之后需要右移的位数
   logic [11:0] sram_addr_tmp; // 临时算出的 sram_addr
+  logic exe_beq_done; // beq 的执行状态
+  logic exe_mem_done; // load/store 的执行状态
+  logic [1:0] reg_write_state; // 写回寄存器的状态
+  logic is_split;     // 非对齐访问，store 分两次写入
+
   always_comb begin
     case (sram_addr_tmp%4)
       2'b00: shift_val = 5'd0;
@@ -118,6 +124,17 @@ regfile_state_t regfile_state;
       2'b01: wb_sel_o = 4'b0010;
       2'b10: wb_sel_o = 4'b0100;
       2'b11: wb_sel_o = 4'b1000;
+      endcase
+    end
+    else begin
+      case(sram_addr_tmp%4)
+      2'b00: wb_sel_o = 4'b0011;
+      2'b01: wb_sel_o = 4'b0110;
+      2'b10: wb_sel_o = 4'b1100;
+      2'b11: begin
+        wb_sel_o = 4'b1000;
+        is_split = 1'b1;
+      end
       endcase
     end
   end
@@ -200,6 +217,10 @@ always_ff @ (posedge clk or posedge rst) begin
         regfile_state <= STATE_ASSIGN;
         exe_arith_done <= 1'b0;
         sram_addr_tmp <= 12'h0000;
+        exe_beq_done <= 1'b0;
+        exe_mem_done <= 1'b0;
+        reg_write_state <= 2'h0;
+        is_split <= 1'b0;
     end
     else begin
         case(state)
@@ -279,28 +300,136 @@ always_ff @ (posedge clk or posedge rst) begin
                 end
             end
             STATE_WB_ARITH: begin
-                // 写回寄存器
+                // 写回寄存器 设定成多周期
+                if (reg_write_state==0) begin
                 waddr <= rd;
                 wdata <= rd_val;
                 we <= 1'b1;
-                state <= STATE_IF;
+                reg_write_state <= 1;
+                end
+                else if (reg_write_state==1) begin
+                  reg_write_state <= 2;
+                end
+                if (reg_write_state==2) begin
+                  we <= 1'b0;
+                  reg_write_state <= 0;
+                  state <= STATE_IF;
+                end
             end
             STATE_EXE_BEQ: begin
               if(rs1_val==rs2_val) begin
                 // imm 可能需要符号扩展，因为 lui_imm 没人用 就用它了
+                if(!exe_beq_done) begin
                 if (imm[12]) begin
                   lui_imm = {19{imm[12]}}+imm;
                 end
                 else begin
                   lui_imm = imm;
                 end
-                pc_reg <= pc_now_reg + lui_imm;
-                state <= STATE_IF;
+                exe_beq_done <= 1'b1;
+                end
+                else begin
+                  exe_beq_done <= 1'b0;
+                  // 这个需要等一个周期
+                  pc_reg <= pc_now_reg + lui_imm;
+                  state <= STATE_IF;
+                end
               end
             end
             STATE_EXE_LD: begin
               // 算 base_reg + offset 算 sel_o 考虑到非对齐访问，最后到某个阶段要右移
-              
+              // 符号扩展
+              if (!exe_mem_done) begin
+              if (imm[11]) begin
+                lui_imm = {20{imm[11]}}+imm;
+              end
+              else begin
+                lui_imm = imm;
+              end
+              exe_mem_done <= 1'b1;
+              end
+              else begin
+                exe_mem_done <= 1'b0;
+                sram_addr_tmp <= rs1_val + lui_imm;
+                state <= STATE_READ_LD;
+              end
+            end
+            STATE_READ_LD: begin
+              wb_adr_o <= sram_addr_tmp;
+              wb_cyc_o <= 1'b1;
+              wb_stb_o <= 1'b1;
+              wb_we_o <= 1'b0;
+              // wb_sel_o 已经在上面赋值了
+              if (wb_ack_i) begin
+                rd_val <= wb_dat_i>>shift_val;
+                wb_cyc_o <= 1'b0;
+                wb_stb_o <= 1'b0;
+                state <= STATE_REG_LD;
+              end
+            end
+
+            STATE_REG_LD: begin
+              if (reg_write_state==0) begin
+                waddr <= rd;
+                wdata <= rd_val;
+                we <= 1'b1;
+                reg_write_state <= 1;
+              end
+              else if (reg_write_state==1) begin
+                reg_write_state <= 2;
+              end
+              else begin
+                we <= 1'b0;
+                reg_write_state <= 0;
+                state <= STATE_IF;
+              end
+            end
+            STATE_EXE_ST: begin
+              // store 的执行阶段
+              if (!exe_mem_done) begin
+              if (imm[11]) begin
+                lui_imm = {20{imm[11]}}+imm;
+              end
+              else begin
+                lui_imm = imm;
+              end
+              exe_mem_done <= 1'b1;
+              end
+              else begin
+                exe_mem_done <= 1'b0;
+                sram_addr_tmp <= rs1_val + lui_imm;
+                state <= STATE_WRITE_ST;
+              end
+            end
+            STATE_WRITE_ST: begin  // 应该到这里 is_split 已经被正常赋值了
+              if (!is_split) begin
+                wb_adr_o <= sram_addr_tmp;
+                wb_dat_o <= rs2_val;
+                wb_cyc_o <= 1'b1;
+                wb_stb_o <= 1'b1;
+                wb_we_o <= 1'b1;
+                if (wb_ack_i) begin
+                  wb_cyc_o <= 1'b0;
+                  wb_stb_o <= 1'b0;
+                  state <= STATE_IF;
+                end
+              end
+              else begin  // 这个分状态写吧
+                wb_adr_o <= sram_addr_tmp;
+                wb_dat_o <= rs2_val[7:0];
+                wb_cyc_o <= 1'b1;
+                wb_stb_o <= 1'b1;
+                wb_we_o <= 1'b1;
+                if (wb_ack_i) begin
+                  sram_addr_tmp <= sram_addr_tmp + 1;   
+                  // 这一步的 write2ram 是把 rs2_val 换成 rs2_val 的次低8位然后写进去 但是因为之前 always_comb 的原因 使能是 b0011 
+                  // 如果之后有问题的话 把 always_comb 的分支换成 write_word/write_byte 试试
+                  is_split <= 0;
+                  rs2_val <= rs2_val[15:8];
+                  wb_cyc_o <= 1'b0;
+                  wb_stb_o <= 1'b0;
+                end
+              end
             end
         endcase
     end
