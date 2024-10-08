@@ -95,8 +95,37 @@ module lab3_tb;
     #100;
     push_btn=0;
     #1000;
-    // TODO: 随机测试各种指令
+    // 求和
+    dip_sw= `inst_poke(5'd15, 16'hfd);
+    push_btn = 1;
+    #100;
+    push_btn = 0;
+    #1000;
 
+    dip_sw = `inst_rtype(5'd14, 5'd15, 5'd16, 4'd1);
+
+    push_btn = 1;
+    #100;
+    push_btn = 0;
+    #1000;
+
+    dip_sw = `inst_peek(5'd14,one);
+    push_btn=1;
+    #100;
+    push_btn=0;
+    #1000;
+
+    dip_sw=`inst_rtype(5'd13, 5'd14, 5'd16, 4'd10);  // ROL 检查是否实现正确
+    push_btn = 1;
+    #1000;
+    push_btn = 0;
+    #1000;
+
+    dip_sw=`inst_peek(5'd13,one);
+    push_btn=1;
+    #100;
+    push_btn=0;
+    #1000;
     #100000 $finish;
   end
 

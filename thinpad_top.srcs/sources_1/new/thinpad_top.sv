@@ -77,7 +77,22 @@ module thinpad_top (
     output wire       video_hsync,  // 行同步（水平同步）信号
     output wire       video_vsync,  // 场同步（垂直同步）信号
     output wire       video_clk,    // 像素时钟输出
-    output wire       video_de      // 行数据有效信号，用于区分消隐区
+    output wire       video_de,      // 行数据有效信号，用于区分消隐区
+
+    output reg [31:0] pc_dbg,
+    output reg [3:0] state_dbg,
+    output reg [3:0] ty_dbg,
+    output reg [31:0] instr_dbg,
+    output reg [12:0] imm_dbg,
+    output reg [31:0] lui_imm_dbg,
+    output reg [4:0] rd_dbg,
+    output reg [4:0] rs1_dbg,
+    output reg [4:0] rs2_dbg,
+    output reg [31:0] rs1_val_dbg,
+    output reg [31:0] rs2_val_dbg,
+    output reg [31:0] rd_val_dbg,
+    output reg [31:0] wb_adr_o_dbg,
+    output reg [31:0] wb_dat_o_dbg
 );
 
   /* =========== Demo code begin =========== */
@@ -243,12 +258,25 @@ module thinpad_top (
   logic [ 3:0] wbm_sel_o;
   logic        wbm_we_o;
 
+  wire [4:0] raddr_a;
+  wire [4:0] raddr_b;
+  wire [4:0] waddr;
+  wire [31:0] wdata;
+  wire [4:0] we;
+  wire [31:0] rdata_a;
+  wire [31:0] rdata_b;
+
+  wire [31:0] alu_a;
+  wire [31:0] alu_b;
+  wire [3:0] alu_op;
+  reg [31:0] alu_res;
+
   cpu #(
       .ADDR_WIDTH(32),
       .DATA_WIDTH(32)
   ) my_cpu (
-      .clk_i(sys_clk),
-      .rst_i(sys_rst),
+      .clk(sys_clk),
+      .rst(sys_rst),
 
       // TODO: 添加需要的控制信号，例如按键开关？
       .push_btn(push_btn),
@@ -263,18 +291,39 @@ module thinpad_top (
       .wb_dat_o(wbm_dat_o),
       .wb_dat_i(wbm_dat_i),
       .wb_sel_o(wbm_sel_o),
-      .wb_we_o (wbm_we_o)
+      .wb_we_o (wbm_we_o),
+      
+      .alu_a(alu_a),
+      .alu_b(alu_b),
+      .alu_op(alu_op),
+      .alu_y(alu_res),
+
+      .raddr_a(raddr_a),
+      .raddr_b(raddr_b),
+      .waddr(waddr),
+      .wdata(wdata),
+      .we(we),
+      .rdata_a(rdata_a),
+      .rdata_b(rdata_b),
+
+      // debug info
+      .pc_dbg(pc_dbg),
+      .state_dbg(state_dbg),
+      .ty_dbg(ty_dbg),
+      .instr_dbg(instr_dbg),
+      .imm_dbg(imm_dbg),
+      .lui_imm_dbg(lui_imm_dbg),
+      .rd_dbg(rd_dbg),
+      .rs1_dbg(rs1_dbg),
+      .rs2_dbg(rs2_dbg),
+      .rs1_val_dbg(rs1_val_dbg),
+      .rs2_val_dbg(rs2_val_dbg),
+      .rd_val_dbg(rd_val_dbg),
+      .wb_adr_o_dbg(wb_adr_o_dbg),
+      .wb_dat_o_dbg(wb_dat_o_dbg)
 
   );
    /* =========== CONNECT WITH REGFILE =========== */
-
-   wire [4:0] raddr_a;
-   wire [4:0] raddr_b;
-   wire [4:0] waddr;
-   wire [31:0] wdata;
-   wire [4:0] we;
-   wire [31:0] rdata_a;
-   wire [31:0] rdata_b;
 
     register_file_32 regfile (
         .clk(sys_clk),
@@ -291,11 +340,6 @@ module thinpad_top (
   /* =========== CONNECT WITH REGFILE END =========== */
 
   /* =========== CONNECT WITH ALU =========== */
-
-  wire [31:0] alu_a;
-  wire [31:0] alu_b;
-  wire [3:0] alu_op;
-  reg [31:0] alu_res;
 
   alu_32 alu (
       .a(alu_a),

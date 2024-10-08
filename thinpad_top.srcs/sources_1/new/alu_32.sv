@@ -37,11 +37,11 @@ module alu_32(
             4'b0100: y = a | b;
             4'b0101: y = a ^ b;
             4'b0110: y = ~a;
-            4'b0111: y = a << b;
-            4'b1000: y = a >> b;
-            4'b1001: y = a >>> b;
-            4'b1010: y = a << b | a >> (32 - b);
-            default: y = 31'b0;
+            4'b0111: y = a << (b&31);
+            4'b1000: y = a >> (b&31);
+            4'b1001: y = $signed(a) >>> (b&31);
+            4'b1010: y = a << (b&31) | a >> (32 - b&31);
+            default: y = 32'b0;
         endcase
     end
 endmodule

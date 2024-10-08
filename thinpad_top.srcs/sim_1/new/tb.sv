@@ -45,9 +45,25 @@ module tb;
   wire uart_tbre;  // 发送数据标志
   wire uart_tsre;  // 数据发送完毕标志
 
+  // debug info
+  reg [31:0] pc_dbg;
+  reg [3:0] state_dbg;
+  reg [3:0] ty_dbg;
+  reg [31:0] instr_dbg;
+  reg [12:0] imm_dbg;
+  reg [31:0] lui_imm_dbg;
+  reg [4:0] rd_dbg;
+  reg [4:0] rs1_dbg;
+  reg [4:0] rs2_dbg;
+  reg [31:0] rs1_val_dbg;
+  reg [31:0] rs2_val_dbg;
+  reg [31:0] rd_val_dbg;
+  reg [31:0] wb_adr_o_dbg;
+  reg [31:0] wb_dat_o_dbg;
+
   // Windows 需要注意路径分隔符的转义，例如 "D:\\foo\\bar.bin"
-  parameter BASE_RAM_INIT_FILE = "/tmp/main.bin"; // BaseRAM 初始化文件，请修改为实际的绝对路径
-  parameter EXT_RAM_INIT_FILE = "/tmp/eram.bin";  // ExtRAM 初始化文件，请修改为实际的绝对路径
+  parameter BASE_RAM_INIT_FILE = "D:\\coderyxy4\\test.bin"; // BaseRAM 初始化文件，请修改为实际的绝对路径
+  parameter EXT_RAM_INIT_FILE = "D:\\coderyxy4\\eram.bin";  // ExtRAM 初始化文件，请修改为实际的绝对路径
   parameter FLASH_INIT_FILE = "/tmp/kernel.elf";  // Flash 初始化文件，请修改为实际的绝对路径
 
   initial begin
@@ -61,17 +77,17 @@ module tb;
     reset_btn = 1;
     #100;
     reset_btn = 0;
-    for (integer i = 0; i < 20; i = i + 1) begin
-      #100;  // 等待 100ns
-      push_btn = 1;  // 按下 push_btn 按钮
-      #100;  // 等待 100ns
-      push_btn = 0;  // 松开 push_btn 按钮
-    end
+    // for (integer i = 0; i < 20; i = i + 1) begin
+    //   #100;  // 等待 100ns
+    //   push_btn = 1;  // 按下 push_btn 按钮
+    //   #100;  // 等待 100ns
+    //   push_btn = 0;  // 松开 push_btn 按钮
+    // end
   
     // 模拟 PC 通过直连串口，向 FPGA 发送字符
-    uart.pc_send_byte(8'h32); // ASCII '2'
+    // uart.pc_send_byte(8'h32); // ASCII '2'
     #10000;
-    uart.pc_send_byte(8'h33); // ASCII '3'
+    // uart.pc_send_byte(8'h33); // ASCII '3'
   end
 
   // 待测试用户设计
@@ -111,7 +127,24 @@ module tb;
       .flash_oe_n(flash_oe_n),
       .flash_ce_n(flash_ce_n),
       .flash_byte_n(flash_byte_n),
-      .flash_we_n(flash_we_n)
+      .flash_we_n(flash_we_n),
+
+      // debug info
+      .pc_dbg(pc_dbg),
+      .state_dbg(state_dbg),
+      .ty_dbg(ty_dbg),
+      .instr_dbg(instr_dbg),
+      .imm_dbg(imm_dbg),
+      .lui_imm_dbg(lui_imm_dbg),
+      .rd_dbg(rd_dbg),
+      .rs1_dbg(rs1_dbg),
+      .rs2_dbg(rs2_dbg),
+      .rs1_val_dbg(rs1_val_dbg),
+      .rs2_val_dbg(rs2_val_dbg),
+      .rd_val_dbg(rd_val_dbg),
+      .wb_adr_o_dbg(wb_adr_o_dbg),
+      .wb_dat_o_dbg(wb_dat_o_dbg)
+      
   );
   // 时钟源
   clock osc (

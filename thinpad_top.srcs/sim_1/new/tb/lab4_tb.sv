@@ -65,11 +65,11 @@ module lab4_tb;
   reg [31:0] ext_wb_dat_o_dbg;
 
   // Windows 需要注意路径分隔符的转义，例如 "D:\\foo\\bar.bin"
-  // parameter BASE_RAM_INIT_FILE = "/tmp/main.bin"; // BaseRAM 初始化文件，请修改为实际的绝对路径
-  // parameter EXT_RAM_INIT_FILE = "/tmp/eram.bin";  // ExtRAM 初始化文件，请修改为实际的绝对路径
+  parameter BASE_RAM_INIT_FILE = "/tmp/main.bin"; // BaseRAM 初始化文件，请修改为实际的绝对路径
+  parameter EXT_RAM_INIT_FILE = "/tmp/eram.bin";  // ExtRAM 初始化文件，请修改为实际的绝对路径
   // TODO 修改回来
-  parameter BASE_RAM_INIT_FILE = "D:\\coderyxy4\\main.bin"; // BaseRAM 初始化文件，请修改为实际的绝对路径
-  parameter EXT_RAM_INIT_FILE = "D:\\coderyxy4\\eram.bin";  // ExtRAM 初始化文件，请修改为实际的绝对路径
+ // parameter BASE_RAM_INIT_FILE = "D:\\coderyxy4\\main.bin"; // BaseRAM 初始化文件，请修改为实际的绝对路径
+  // parameter EXT_RAM_INIT_FILE = "D:\\coderyxy4\\eram.bin";  // ExtRAM 初始化文件，请修改为实际的绝对路径
   initial begin
     // 在这里可以自定义测试输入序列，例如：
     dip_sw = 32'h2;
@@ -128,34 +128,34 @@ module lab4_tb;
       .flash_oe_n(),
       .flash_ce_n(),
       .flash_byte_n(),
-      .flash_we_n(),
+      .flash_we_n()
 
-      // debug info
-      .test_error_round(test_error_round),
-      .test_error_addr(test_error_addr),
-      .test_error_read_data(test_error_read_data),
-      .test_error_expected_data(test_error_expected_data),
+      // // debug info
+      // .test_error_round(test_error_round),
+      // .test_error_addr(test_error_addr),
+      // .test_error_read_data(test_error_read_data),
+      // .test_error_expected_data(test_error_expected_data),
 
-      // more debug info
-      .base_state_dbg(base_state_dbg),
-      .base_sram_addr_dbg(base_addr_dbg),
-      .base_sram_data_dbg(base_data_dbg),
-      .base_sram_be_n_dbg(base_be_n_dbg),
-      .base_sram_data_i_comb_dbg(base_data_i_comb_dbg),
-      .base_sram_data_t_comb_dbg(base_data_t_comb_dbg),
-      .base_sram_data_o_comb_dbg(base_data_o_comb_dbg),
-      .base_wb_ack_o_dbg(base_wb_ack_o_dbg),
-      .base_wb_dat_o_dbg(base_wb_dat_o_dbg),
+      // // more debug info
+      // .base_state_dbg(base_state_dbg),
+      // .base_sram_addr_dbg(base_addr_dbg),
+      // .base_sram_data_dbg(base_data_dbg),
+      // .base_sram_be_n_dbg(base_be_n_dbg),
+      // .base_sram_data_i_comb_dbg(base_data_i_comb_dbg),
+      // .base_sram_data_t_comb_dbg(base_data_t_comb_dbg),
+      // .base_sram_data_o_comb_dbg(base_data_o_comb_dbg),
+      // .base_wb_ack_o_dbg(base_wb_ack_o_dbg),
+      // .base_wb_dat_o_dbg(base_wb_dat_o_dbg),
 
-      .ext_state_dbg(ext_state_dbg),
-      .ext_sram_addr_dbg(ext_addr_dbg),
-      .ext_sram_data_dbg(ext_data_dbg),
-      .ext_sram_be_n_dbg(ext_be_n_dbg),
-      .ext_sram_data_i_comb_dbg(ext_data_i_comb_dbg),
-      .ext_sram_data_t_comb_dbg(ext_data_t_comb_dbg),
-      .ext_sram_data_o_comb_dbg(ext_data_o_comb_dbg),
-      .ext_wb_ack_o_dbg(ext_wb_ack_o_dbg),
-      .ext_wb_dat_o_dbg(ext_wb_dat_o_dbg)
+      // .ext_state_dbg(ext_state_dbg),
+      // .ext_sram_addr_dbg(ext_addr_dbg),
+      // .ext_sram_data_dbg(ext_data_dbg),
+      // .ext_sram_be_n_dbg(ext_be_n_dbg),
+      // .ext_sram_data_i_comb_dbg(ext_data_i_comb_dbg),
+      // .ext_sram_data_t_comb_dbg(ext_data_t_comb_dbg),
+      // .ext_sram_data_o_comb_dbg(ext_data_o_comb_dbg),
+      // .ext_wb_ack_o_dbg(ext_wb_ack_o_dbg),
+      // .ext_wb_dat_o_dbg(ext_wb_dat_o_dbg)
   );
 
   // 时钟源

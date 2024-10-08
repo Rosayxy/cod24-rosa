@@ -77,35 +77,8 @@ module lab4_top (
     output wire       video_hsync,  // 行同步（水平同步）信号
     output wire       video_vsync,  // 场同步（垂直同步）信号
     output wire       video_clk,    // 像素时钟输出
-    output wire       video_de,      // 行数据有效信号，用于区分消隐区
+    output wire       video_de      // 行数据有效信号，用于区分消隐区
     
-    
-    // debug info
-    output wire [31:0] test_error_round,  // 数据错误轮次
-    output wire [31:0] test_error_addr,  // 数据错误地址
-    output wire [31:0] test_error_read_data,  // 错误地址读出的数据
-    output wire [31:0] test_error_expected_data,  // 错误地址预期的数据
-
-    //  more debug info
-    output reg [2:0] base_state_dbg,
-    output reg [19:0] base_sram_addr_dbg,
-    output reg [31:0] base_sram_data_dbg,
-    output reg [3:0] base_sram_be_n_dbg,
-    output reg [31:0] base_sram_data_i_comb_dbg,
-    output reg base_sram_data_t_comb_dbg,
-    output reg base_sram_data_o_comb_dbg,
-    output reg base_wb_ack_o_dbg,
-    output reg [31:0] base_wb_dat_o_dbg,
-
-    output reg [2:0] ext_state_dbg,
-    output reg [19:0] ext_sram_addr_dbg,
-    output reg [31:0] ext_sram_data_dbg,
-    output reg [3:0] ext_sram_be_n_dbg,
-    output reg [31:0] ext_sram_data_i_comb_dbg,
-    output reg ext_sram_data_t_comb_dbg,
-    output reg ext_sram_data_o_comb_dbg,
-    output reg ext_wb_ack_o_dbg,
-    output reg [31:0] ext_wb_dat_o_dbg
 );
 
   /* =========== Demo code begin =========== */
@@ -197,13 +170,7 @@ module lab4_top (
 
       // status output
       .done (test_done),
-      .error(test_error),
-
-      // detailed status for simulation
-      .error_round        (test_error_round),
-      .error_addr         (test_error_addr),
-      .error_read_data    (test_error_read_data),
-      .error_expected_data(test_error_expected_data)
+      .error(test_error)
   );
 
   /* =========== Lab4 Master end =========== */
@@ -303,17 +270,7 @@ module lab4_top (
       .sram_ce_n(base_ram_ce_n),
       .sram_oe_n(base_ram_oe_n),
       .sram_we_n(base_ram_we_n),
-      .sram_be_n(base_ram_be_n),
-
-        .state_dbg(base_state_dbg),
-        .sram_addr_dbg(base_sram_addr_dbg),
-        .sram_data_dbg(base_sram_data_dbg),
-        .sram_be_n_dbg(base_sram_be_n_dbg),
-        .sram_data_i_comb_dbg(base_sram_data_i_comb_dbg),
-        .sram_data_t_comb_dbg(base_sram_data_t_comb_dbg),
-        .sram_data_o_comb_dbg(base_sram_data_o_comb_dbg),
-        .wb_ack_o_dbg(base_wb_ack_o_dbg),
-        .wb_dat_o_dbg(base_wb_dat_o_dbg)
+      .sram_be_n(base_ram_be_n)
   );
 
   sram_controller #(
@@ -339,17 +296,7 @@ module lab4_top (
       .sram_ce_n(ext_ram_ce_n),
       .sram_oe_n(ext_ram_oe_n),
       .sram_we_n(ext_ram_we_n),
-      .sram_be_n(ext_ram_be_n),
-
-        .state_dbg(ext_state_dbg),
-        .sram_addr_dbg(ext_sram_addr_dbg),
-        .sram_data_dbg(ext_sram_data_dbg),
-        .sram_be_n_dbg(ext_sram_be_n_dbg),
-        .sram_data_i_comb_dbg(ext_sram_data_i_comb_dbg),
-        .sram_data_t_comb_dbg(ext_sram_data_t_comb_dbg),
-        .sram_data_o_comb_dbg(ext_sram_data_o_comb_dbg),
-        .wb_ack_o_dbg(ext_wb_ack_o_dbg),
-        .wb_dat_o_dbg(ext_wb_dat_o_dbg)
+      .sram_be_n(ext_ram_be_n)
   );
   /* =========== Lab4 Slaves end =========== */
 
