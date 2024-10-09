@@ -37,6 +37,10 @@ module lab5_tb;
   wire uart_tbre;  // 发送数据标志
   wire uart_tsre;  // 数据发送完毕标志
 
+  // debug info
+  reg [4:0] state_dbg;
+  reg [3:0] cnt2_dbg;
+
   // Windows 需要注意路径分隔符的转义，例如 "D:\\foo\\bar.bin"
   parameter BASE_RAM_INIT_FILE = "D:\\coderyxy4\\main.bin"; // BaseRAM 初始化文件，请修改为实际的绝对路径
   parameter EXT_RAM_INIT_FILE = "D:\\coderyxy4\\eram.bin";  // ExtRAM 初始化文件，请修改为实际的绝对路径
@@ -126,7 +130,6 @@ module lab5_tb;
       .flash_ce_n(),
       .flash_byte_n(),
       .flash_we_n()
-
   );
 
   // 时钟源

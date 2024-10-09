@@ -57,7 +57,6 @@ module lab5_master #(
   reg [DATA_WIDTH-1:0] is_send;
   reg [DATA_WIDTH-1:0] target_data;
   reg [3:0] cnt2;
-  
 
   // 把实验结果接出去
   logic test_done, test_error;
@@ -138,7 +137,7 @@ module lab5_master #(
       end
       ST_WRITE_ACTION_DONE: begin
           state_n = ST_IDLE;
-          cnt = cnt + 1;
+
       end
       ST_CMP_IDLE: begin
         state_n=ST_CMP_READ;
@@ -153,13 +152,11 @@ module lab5_master #(
       end
       ST_CMP_READ_ACTION: begin
         if (wb_ack_i) begin
-          if (data[cnt2]!=wb_dat_i) begin
+          if (data[cnt2][7:0]!=wb_dat_i[7:0]) begin
             state_n=ST_ERROR;
           end
           else begin
           state_n=ST_CMP_READ;
-          cnt2=cnt2+1;
-          addr<=addr+4;
           end
         end
       end
@@ -199,7 +196,6 @@ module lab5_master #(
       addr <= 32'h00000000;
       target_data <= 32'h00000000;
       cnt2<=0;
-
     end else begin
       case (state)
       ST_IDLE: begin
@@ -335,6 +331,7 @@ module lab5_master #(
 
       ST_WRITE_ACTION_DONE: begin
         // do nothing
+        cnt <= cnt+1;
       end
       ST_CMP_IDLE: begin
         cnt2=0;
@@ -353,6 +350,9 @@ module lab5_master #(
         if (wb_ack_i) begin
           wb_cyc_o <= 0;
           wb_stb_o <= 0;
+
+          cnt2 <= cnt2+1;
+          addr <= addr+4;
         end
       end
       ST_DONE: begin
