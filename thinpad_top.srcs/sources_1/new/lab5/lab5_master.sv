@@ -70,10 +70,7 @@ module lab5_master #(
 
     case (state)
       ST_IDLE: begin
-        if (push_btn) begin
-            state_n = ST_READ_WAIT_ACTION;
-        end
-        else if (cnt>0 && cnt<10)begin
+        if (cnt>=0 && cnt<10)begin
             state_n = ST_READ_WAIT_ACTION;
         end
         else begin
@@ -193,24 +190,20 @@ module lab5_master #(
       test_done <= 0;
       test_error <= 0;
       cnt <= 0;
-      addr <= 32'h00000000;
+      addr <= dip_sw;
       target_data <= 32'h00000000;
       cnt2<=0;
     end else begin
       case (state)
       ST_IDLE: begin
         // 判断是否是可以发送的条件
-        if (push_btn||(cnt>0 && cnt<10)) begin
+        if (cnt>=0 && cnt<10) begin
           wb_cyc_o <= 1;
           wb_stb_o <= 1;
           wb_adr_o <= 32'h10000005;
           wb_sel_o <= 4'b0010;
           wb_we_o <= 0;
-
-        end
-        if (push_btn) begin
-          addr <= dip_sw;
-        end
+        end       
       end
 
       ST_READ_WAIT_ACTION: begin
