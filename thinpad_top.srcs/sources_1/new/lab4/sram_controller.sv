@@ -28,7 +28,7 @@ module sram_controller #(
     output reg sram_ce_n,
     output reg sram_oe_n,
     output reg sram_we_n,
-    output reg [SRAM_BYTES-1:0] sram_be_n // TODO 可能这里有点小 bug
+    output reg [SRAM_BYTES-1:0] sram_be_n
     
 );
 

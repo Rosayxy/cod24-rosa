@@ -4,7 +4,7 @@ module sram_tester #(
 
     parameter ADDR_BASE   = 32'h8000_0000,
     parameter ADDR_MASK   = 32'h007F_FFFF,
-    parameter TEST_ROUNDS = 10
+    parameter TEST_ROUNDS = 1000
 ) (
     input wire clk_i,
     input wire rst_i,

@@ -130,32 +130,6 @@ module lab4_tb;
       .flash_byte_n(),
       .flash_we_n()
 
-      // // debug info
-      // .test_error_round(test_error_round),
-      // .test_error_addr(test_error_addr),
-      // .test_error_read_data(test_error_read_data),
-      // .test_error_expected_data(test_error_expected_data),
-
-      // // more debug info
-      // .base_state_dbg(base_state_dbg),
-      // .base_sram_addr_dbg(base_addr_dbg),
-      // .base_sram_data_dbg(base_data_dbg),
-      // .base_sram_be_n_dbg(base_be_n_dbg),
-      // .base_sram_data_i_comb_dbg(base_data_i_comb_dbg),
-      // .base_sram_data_t_comb_dbg(base_data_t_comb_dbg),
-      // .base_sram_data_o_comb_dbg(base_data_o_comb_dbg),
-      // .base_wb_ack_o_dbg(base_wb_ack_o_dbg),
-      // .base_wb_dat_o_dbg(base_wb_dat_o_dbg),
-
-      // .ext_state_dbg(ext_state_dbg),
-      // .ext_sram_addr_dbg(ext_addr_dbg),
-      // .ext_sram_data_dbg(ext_data_dbg),
-      // .ext_sram_be_n_dbg(ext_be_n_dbg),
-      // .ext_sram_data_i_comb_dbg(ext_data_i_comb_dbg),
-      // .ext_sram_data_t_comb_dbg(ext_data_t_comb_dbg),
-      // .ext_sram_data_o_comb_dbg(ext_data_o_comb_dbg),
-      // .ext_wb_ack_o_dbg(ext_wb_ack_o_dbg),
-      // .ext_wb_dat_o_dbg(ext_wb_dat_o_dbg)
   );
 
   // 时钟源
