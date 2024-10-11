@@ -62,11 +62,12 @@ module uart_controller #(
   /*-- internal registers --*/
   wire [7:0] reg_status = {2'b0, ~txd_busy, 4'b0, rxd_data_ready};
 
-  /*-- wishbone fsm --*/
+  /*-- wishbone fsm --*/ 
+  // oh 原来这玩意是非阻塞的
   always_ff @(posedge clk_i) begin
-    if (rst_i)
+    if (rst_i) begin
       wb_ack_o <= 0;
-    else
+    end else
       // every request get ACK-ed immediately
       if (wb_ack_o) begin
         wb_ack_o <= 0;

@@ -28,8 +28,15 @@ module sram_controller #(
     output reg sram_ce_n,
     output reg sram_oe_n,
     output reg sram_we_n,
-    output reg [SRAM_BYTES-1:0] sram_be_n
-    
+    output reg [SRAM_BYTES-1:0] sram_be_n,
+
+    // output debug info for baseram
+    output reg [19:0] sram_addr_dbg,
+    output reg [31:0] sram_data_dbg,
+    output reg [3:0] sram_be_n_dbg,
+    output reg wb_ack_o_dbg,
+    output reg [31:0] wb_dat_o_dbg,
+    output reg [2:0] state_dbg
 );
 
     typedef enum logic [2:0] {
@@ -91,6 +98,11 @@ module sram_controller #(
           wb_dat_o <= 0;
           sram_addr <= 0;
 
+        state_dbg <= 0;
+        wb_ack_o_dbg <= 0;
+        sram_addr_dbg <= 0;
+        wb_dat_o_dbg <= 0;
+        sram_be_n_dbg <= 1;
       end else begin
           case (state)
               STATE_IDLE: begin
@@ -105,6 +117,7 @@ module sram_controller #(
                           state <= STATE_WRITE;
                           sram_data_t_comb <= 0;
                           wb_ack_o <= 1'b0;
+
                       end else begin
                           // 赋值
                           sram_addr <= wb_adr_i/4;
@@ -116,6 +129,10 @@ module sram_controller #(
                           sram_data_t_comb <= 1;
                           wb_ack_o <= 0;
 
+                            sram_addr_dbg <= wb_adr_i/4;
+                            state_dbg <= 1;
+                            sram_be_n_dbg <= ~wb_sel_i;
+                            wb_ack_o_dbg <= 0;
                       end
                   end
               end
@@ -123,6 +140,7 @@ module sram_controller #(
               STATE_READ: begin
                 // other signals: wait for the effective address
                   state <= STATE_READ_2;
+                  state_dbg <= 2;
               end
 
               STATE_READ_2: begin
@@ -133,6 +151,9 @@ module sram_controller #(
                   sram_oe_n <= 1;
                   state <= STATE_DONE;
 
+                    wb_dat_o_dbg <= sram_data_i_comb;
+                    wb_ack_o_dbg <= 1;
+                    state_dbg <= 6;
               end
 
               STATE_WRITE: begin
@@ -158,6 +179,8 @@ module sram_controller #(
                   state <= STATE_IDLE;
                   wb_ack_o <= 0;
 
+                    state_dbg <= 0;
+                    wb_ack_o_dbg <= 0;
               end
 
           endcase

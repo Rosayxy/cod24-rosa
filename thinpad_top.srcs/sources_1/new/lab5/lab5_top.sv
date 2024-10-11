@@ -78,7 +78,7 @@ module lab5_top (
     output wire       video_vsync,  // 场同步（垂直同步）信号
     output wire       video_clk,    // 像素时钟输出
     output wire       video_de      // 行数据有效信号，用于区分消隐区
-    
+
 );
 
   /* =========== Demo code begin =========== */

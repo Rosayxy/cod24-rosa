@@ -10,7 +10,7 @@
                        // and RX receives one bit per clock cycle (for fast simulations)
 
 ////////////////////////////////////////////////////////
-
+// 感觉可以先把两者的 state 都给接出去的样子 发现问题：txd 应该设置为0的时候会输出1
 module async_transmitter(
 	input wire clk,
 	input wire TxD_start,
