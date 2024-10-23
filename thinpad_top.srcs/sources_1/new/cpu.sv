@@ -117,34 +117,35 @@ regfile_state_t regfile_state;
     endcase
   end
 
-  // 计算sel_o todo 思考特殊情况：非对齐访问中 store 分两次写入
-  always_comb begin
-    if (ty == LB||ty==SB) begin
-      case(sram_addr_tmp%4)
-      2'b00: wb_sel_o = 4'b0001;
-      2'b01: wb_sel_o = 4'b0010;
-      2'b10: wb_sel_o = 4'b0100;
-      2'b11: wb_sel_o = 4'b1000;
-      endcase
-    end
-    else begin
-      case(sram_addr_tmp%4)
-      2'b00: wb_sel_o = 4'b0011;
-      2'b01: wb_sel_o = 4'b0110;
-      2'b10: wb_sel_o = 4'b1100;
-      2'b11: begin
-        wb_sel_o = 4'b1000;
-        is_split = 1'b1;
-      end
-      endcase
-    end
-  end
+  // // 计算sel_o todo 思考特殊情况：非对齐访问中 store 分两次写入
+  // // TODO 把这一段移到时序逻辑里面！！
+  // always_comb begin
+  //   if (ty == LB||ty==SB) begin
+  //     case(sram_addr_tmp%4)
+  //     2'b00: wb_sel_o = 4'b0001;
+  //     2'b01: wb_sel_o = 4'b0010;
+  //     2'b10: wb_sel_o = 4'b0100;
+  //     2'b11: wb_sel_o = 4'b1000;
+  //     endcase
+  //   end
+  //   else begin
+  //     case(sram_addr_tmp%4)
+  //     2'b00: wb_sel_o = 4'b0011;
+  //     2'b01: wb_sel_o = 4'b0110;
+  //     2'b10: wb_sel_o = 4'b1100;
+  //     2'b11: begin
+  //       wb_sel_o = 4'b1000;
+  //       is_split = 1'b1;
+  //     end
+  //     endcase
+  //   end
+  // end
 
   always_comb begin
     case(instr_reg[6:0])
       7'b0110111:begin
          ty = LUI;
-          lui_imm = instr_reg[31:12]<<12;
+          
           rd= instr_reg[11:7];
       end
       7'b1100011:begin
@@ -220,11 +221,8 @@ always_ff @ (posedge clk or posedge rst) begin
         wdata <= 32'h0000;
         we <= 1'b0;
         state <= STATE_IF;
-        imm <= 13'h0000;
         lui_imm <= 32'h0000_0000;
-        rd <= 5'h0;
-        rs1 <= 5'h0;
-        rs2 <= 5'h0;
+
         rs1_val <= 32'h0000;
         rs2_val <= 32'h0000;
         rd_val <= 32'h0000;
@@ -285,6 +283,9 @@ always_ff @ (posedge clk or posedge rst) begin
                     end
                     else begin
                         state <= STATE_IF;
+                    end
+                    if (ty == LUI) begin
+                      lui_imm <= {instr_reg[31:12], 12'h000};
                     end
                end
             end
@@ -374,7 +375,14 @@ always_ff @ (posedge clk or posedge rst) begin
               wb_stb_o <= 1'b1;
               wb_we_o <= 1'b0;
 
-              // wb_sel_o 已经在上面赋值了
+              // wb_sel_o 已经在上面赋值了 但是因为过不了编译 所以移到这里了
+              case(sram_addr_tmp%4)
+                2'b00: wb_sel_o = 4'b0001;
+                2'b01: wb_sel_o = 4'b0010;
+                2'b10: wb_sel_o = 4'b0100;
+                2'b11: wb_sel_o = 4'b1000;
+              endcase
+
               if (wb_ack_i) begin
                 case (wb_adr_o%4)
                   2'b00: begin
@@ -423,21 +431,38 @@ always_ff @ (posedge clk or posedge rst) begin
                 exe_mem_done <= 1'b0;
                 sram_addr_tmp <= rs1_val + lui_imm;
                 state <= STATE_WRITE_ST;
+                if ((rs1_val + lui_imm)%4 ==3) begin
+                  is_split <= 1;
+                end
               end
             end
             STATE_WRITE_ST: begin  // 应该到这里 is_split 已经被正常赋值了 非对齐访问是正常的么
               if (!is_split) begin
                 wb_adr_o <= rs1_val + $signed(imm);
-                wb_dat_o <= rs2_val;
+                wb_dat_o <= rs2_val;  // TODO 考虑要不要左移
                 wb_cyc_o <= 1'b1;
                 wb_stb_o <= 1'b1;
                 wb_we_o <= 1'b1;
-
+                if (ty == SB) begin
+                  case(sram_addr_tmp%4)
+                    2'b00: wb_sel_o = 4'b0001;
+                    2'b01: wb_sel_o = 4'b0010;
+                    2'b10: wb_sel_o = 4'b0100;
+                    2'b11: wb_sel_o = 4'b1000;
+                    endcase
+                end
+                else begin
+                  case(sram_addr_tmp%4)
+                    2'b00: wb_sel_o = 4'b0011;
+                    2'b01: wb_sel_o = 4'b0110;
+                    2'b10: wb_sel_o = 4'b1100;
+                    2'b11: wb_sel_o = 4'b0001;
+                  endcase
+                end
                 if (wb_ack_i) begin
                   wb_cyc_o <= 1'b0;
                   wb_stb_o <= 1'b0;
                   state <= STATE_IF;
-
                 end
               end
               else begin  // 这个分状态写吧
@@ -446,8 +471,9 @@ always_ff @ (posedge clk or posedge rst) begin
                 wb_cyc_o <= 1'b1;
                 wb_stb_o <= 1'b1;
                 wb_we_o <= 1'b1;
+                wb_sel_o <= 4'b1000;
                 if (wb_ack_i) begin
-                  sram_addr_tmp <= sram_addr_tmp + 1;   
+                  sram_addr_tmp <= sram_addr_tmp + 4;   // 这个确定是 + 1 莫 **改了这里**
                   // 这一步的 write2ram 是把 rs2_val 换成 rs2_val 的次低8位然后写进去 但是因为之前 always_comb 的原因 使能是 b0011 
                   // 如果之后有问题的话 把 always_comb 的分支换成 write_word/write_byte 试试
                   is_split <= 0;

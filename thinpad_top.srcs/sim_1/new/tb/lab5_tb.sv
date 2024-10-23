@@ -37,15 +37,6 @@ module lab5_tb;
   wire uart_tbre;  // 发送数据标志
   wire uart_tsre;  // 数据发送完毕标志
 
-  reg [31:0] uart_wb_adr_o_dbg;
-  wire uart_wb_cyc_i_dbg;
-  reg uart_wb_ack_o_dbg;
-  wire [31:0] uart_wb_dat_i_dbg;
-  wire [3:0] uart_wb_sel_i_dbg;
-  reg uart_txd_start_dbg;
-  reg [7:0] uart_txd_data_dbg;
-  wire uart_txd_busy_dbg;
-  wire uart_txd_o_dbg;
 
   // debug info
   reg [4:0] state_dbg;
@@ -139,17 +130,7 @@ module lab5_tb;
       .flash_oe_n(),
       .flash_ce_n(),
       .flash_byte_n(),
-      .flash_we_n(),
-
-      .uart_wb_adr_o_dbg(uart_wb_adr_o_dbg),
-      .uart_wb_cyc_i_dbg(uart_wb_cyc_i_dbg),
-      .uart_wb_ack_o_dbg(uart_wb_ack_o_dbg),
-      .uart_dat_i_dbg(uart_wb_dat_i_dbg),
-      .uart_sel_i_dbg(uart_wb_sel_i_dbg),
-      .uart_txd_start_dbg(uart_txd_start_dbg),
-      .uart_txd_data_dbg(uart_txd_data_dbg),
-      .uart_txd_busy_dbg(uart_txd_busy_dbg),
-      .uart_txd_o_dbg(uart_txd_o_dbg)
+      .flash_we_n()
   );
 
   // 时钟源

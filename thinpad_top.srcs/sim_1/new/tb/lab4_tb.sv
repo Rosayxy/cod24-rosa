@@ -72,7 +72,7 @@ module lab4_tb;
   // parameter EXT_RAM_INIT_FILE = "D:\\coderyxy4\\eram.bin";  // ExtRAM 初始化文件，请修改为实际的绝对路径
   initial begin
     // 在这里可以自定义测试输入序列，例如：
-    dip_sw = 32'h2;
+    dip_sw = 32'h1;
     touch_btn = 0;
     reset_btn = 0;
     push_btn = 0;

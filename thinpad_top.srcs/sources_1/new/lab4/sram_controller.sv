@@ -28,15 +28,7 @@ module sram_controller #(
     output reg sram_ce_n,
     output reg sram_oe_n,
     output reg sram_we_n,
-    output reg [SRAM_BYTES-1:0] sram_be_n,
-
-    // output debug info for baseram
-    output reg [19:0] sram_addr_dbg,
-    output reg [31:0] sram_data_dbg,
-    output reg [3:0] sram_be_n_dbg,
-    output reg wb_ack_o_dbg,
-    output reg [31:0] wb_dat_o_dbg,
-    output reg [2:0] state_dbg
+    output reg [SRAM_BYTES-1:0] sram_be_n
 );
 
     typedef enum logic [2:0] {
@@ -64,26 +56,12 @@ module sram_controller #(
     // assign sram_we_n = ram_we_n_reg;
 
     // step1 实现三态门的 wrapper 
-    wire [SRAM_DATA_WIDTH-1:0] sram_data_i_comb; // ram 的输出 todo 到了对应阶段用他给 wb_dat_o 赋值
-    reg [SRAM_DATA_WIDTH-1:0] sram_data_o_comb; // 给 ram 的输入 todo 到了对应阶段去赋值 wb_data_i
+    wire [SRAM_DATA_WIDTH-1:0] sram_data_i_comb; // ram 的输出 到了对应阶段用他给 wb_dat_o 赋值
+    reg [SRAM_DATA_WIDTH-1:0] sram_data_o_comb; // 给 ram 的输入 到了对应阶段去被 wb_data_i 赋值
     reg sram_data_t_comb; // 是否是高阻态 1 代表高阻态 进入读状态
 
     assign sram_data = sram_data_t_comb ? 32'bz : sram_data_o_comb;
     assign sram_data_i_comb = sram_data;
-
-    // always_comb begin
-    //     sram_data_t_comb = 1'b0;
-    //     sram_data_t_comb_debug = 1'b0;
-    //     // 看 wishbone 的读写信号 WE_I
-    //     if (wb_we_i) begin
-    //       sram_data_t_comb = 1'b0;
-    //       sram_data_t_comb_debug = 1'b0;
-    //     end
-    //     else begin
-    //       sram_data_t_comb= 1'b1;
-    //       sram_data_t_comb_debug = 1'b1;
-    //     end
-    // end
 
     // step2 把那个状态转换塞到时序逻辑里面去，和其他信号一块赋值吧
   state_t state;
@@ -97,12 +75,6 @@ module sram_controller #(
           wb_ack_o <= 1'b0;
           wb_dat_o <= 0;
           sram_addr <= 0;
-
-        state_dbg <= 0;
-        wb_ack_o_dbg <= 0;
-        sram_addr_dbg <= 0;
-        wb_dat_o_dbg <= 0;
-        sram_be_n_dbg <= 1;
       end else begin
           case (state)
               STATE_IDLE: begin
@@ -128,11 +100,6 @@ module sram_controller #(
                           state <= STATE_READ;
                           sram_data_t_comb <= 1;
                           wb_ack_o <= 0;
-
-                            sram_addr_dbg <= wb_adr_i/4;
-                            state_dbg <= 1;
-                            sram_be_n_dbg <= ~wb_sel_i;
-                            wb_ack_o_dbg <= 0;
                       end
                   end
               end
@@ -140,7 +107,7 @@ module sram_controller #(
               STATE_READ: begin
                 // other signals: wait for the effective address
                   state <= STATE_READ_2;
-                  state_dbg <= 2;
+
               end
 
               STATE_READ_2: begin
@@ -150,10 +117,6 @@ module sram_controller #(
                   sram_ce_n <= 1;
                   sram_oe_n <= 1;
                   state <= STATE_DONE;
-
-                    wb_dat_o_dbg <= sram_data_i_comb;
-                    wb_ack_o_dbg <= 1;
-                    state_dbg <= 6;
               end
 
               STATE_WRITE: begin
@@ -178,9 +141,6 @@ module sram_controller #(
               STATE_DONE: begin
                   state <= STATE_IDLE;
                   wb_ack_o <= 0;
-
-                    state_dbg <= 0;
-                    wb_ack_o_dbg <= 0;
               end
 
           endcase
