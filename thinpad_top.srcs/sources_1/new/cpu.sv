@@ -27,20 +27,31 @@ module cpu #(
     input wire clk,
     input wire rst,
 
-    // TODO: 添加需要的控制信号，例如按键开关? 还要把 leds 信号接出去
     input wire push_btn,
     input wire reset_btn,
     input wire [31:0] dip_sw,     // 32 位拨码开关，拨到“ON”时为 1
     output reg [15:0] leds,       // 16 位 LED，输出时 1 点亮 按照之前 tester 的模式点亮
-    // wishbone master
-    output reg wb_cyc_o,
-    output reg wb_stb_o,
-    input wire wb_ack_i,
-    output reg [ADDR_WIDTH-1:0] wb_adr_o,
-    output reg [DATA_WIDTH-1:0] wb_dat_o,
-    input wire [DATA_WIDTH-1:0] wb_dat_i,
-    output reg [DATA_WIDTH/8-1:0] wb_sel_o,
-    output reg wb_we_o,
+    // wishbone master 分隔开两段吧
+
+    // connect with icache
+    output reg wbic_cyc_o,
+    output reg wbic_stb_o,
+    input wire wbic_ack_i,
+    output reg [ADDR_WIDTH-1:0] wbic_adr_o,
+    output reg [DATA_WIDTH-1:0] wbic_dat_o,
+    input wire [DATA_WIDTH-1:0] wbic_dat_i,
+    output reg [DATA_WIDTH/8-1:0] wbic_sel_o,
+    output reg wbic_we_o,
+
+    // connect with (to be) dcache
+    output reg wbdc_cyc_o,
+    output reg wbdc_stb_o,
+    input wire wbdc_ack_i,
+    output reg [ADDR_WIDTH-1:0] wbdc_adr_o,
+    output reg [DATA_WIDTH-1:0] wbdc_dat_o,
+    input wire [DATA_WIDTH-1:0] wbdc_dat_i,
+    output reg [DATA_WIDTH/8-1:0] wbdc_sel_o,
+    output reg wbdc_we_o,
 
     // connect with alu
     output reg [31:0] alu_a,
@@ -55,7 +66,11 @@ module cpu #(
     output reg [31:0] wdata,
     output reg we,
     input wire [31:0] rdata_a,
-    input wire [31:0] rdata_b
+    input wire [31:0] rdata_b,
+
+    output reg [4:0] state_dbg,
+    output wire wbic_cyc_o_dbg,
+    output wire [ADDR_WIDTH-1:0] wbic_adr_o_dbg
 );
 
   typedef enum logic [4:0] {  
@@ -117,6 +132,9 @@ regfile_state_t regfile_state;
     endcase
   end
 
+  // TODO debug info
+  assign wbic_cyc_o_dbg = wbic_cyc_o;
+  assign wbic_adr_o_dbg = pc_reg;
   // // 计算sel_o todo 思考特殊情况：非对齐访问中 store 分两次写入
   // // TODO 把这一段移到时序逻辑里面！！
   // always_comb begin
@@ -145,7 +163,6 @@ regfile_state_t regfile_state;
     case(instr_reg[6:0])
       7'b0110111:begin
          ty = LUI;
-          
           rd= instr_reg[11:7];
       end
       7'b1100011:begin
@@ -204,12 +221,20 @@ always_ff @ (posedge clk or posedge rst) begin
         instr_reg <= 32'h00000000;
 
         leds <= 16'h0000;
-        wb_cyc_o <= 1'b0;
-        wb_stb_o <= 1'b0;
-        wb_adr_o <= 32'h00000000;
-        wb_dat_o <= 32'h00000000;
-        wb_sel_o <= 4'h0;
-        wb_we_o <= 1'b0;
+
+        wbic_cyc_o <= 1'b0;
+        wbic_stb_o <= 1'b0;
+        wbic_adr_o <= 32'h0000_0000;
+        wbic_dat_o <= 32'h0000_0000;
+        wbic_sel_o <= 4'h0;
+        wbic_we_o <= 1'b0;
+        
+        wbdc_cyc_o <= 1'b0;
+        wbdc_stb_o <= 1'b0;
+        wbdc_adr_o <= 32'h0000_0000;
+        wbdc_dat_o <= 32'h0000_0000;
+        wbdc_sel_o <= 4'h0;
+        wbdc_we_o <= 1'b0;
 
         alu_a <= 32'h0000;
         alu_b <= 32'h0000;
@@ -234,23 +259,26 @@ always_ff @ (posedge clk or posedge rst) begin
         reg_write_state <= 2'h0;
         is_split <= 1'b0;
 
+        state_dbg <= 5'h0;
     end
     else begin
         case(state)
             STATE_IF: begin
                 pc_now_reg <= pc_reg;
-                wb_adr_o <= pc_reg;
-                wb_cyc_o <= 1'b1;
-                wb_stb_o <= 1'b1;
-                wb_we_o <= 1'b0;
-                wb_sel_o <= 4'b1111;
+                wbic_adr_o <= pc_reg;
+                wbic_cyc_o <= 1'b1;
+                wbic_stb_o <= 1'b1;
+                wbic_we_o <= 1'b0;
+                wbic_sel_o <= 4'b1111;
 
-                if (wb_ack_i) begin
-                    instr_reg <= wb_dat_i;
+                if (wbic_ack_i) begin
+                    instr_reg <= wbic_dat_i;
                     state <= STATE_ID;
                     pc_reg <= pc_reg + 32'h00000004;
-                    wb_cyc_o <= 1'b0;
-                    wb_stb_o <= 1'b0;
+                    wbic_cyc_o <= 1'b0;
+                    wbic_stb_o <= 1'b0;
+
+                    state_dbg <= 1;
                 end
 
             end
@@ -271,18 +299,23 @@ always_ff @ (posedge clk or posedge rst) begin
                     regfile_state <= STATE_ASSIGN;
                     if(ty==LUI||ty==ADDI||ty==ANDI||ty==ADD) begin
                         state <= STATE_EXE_ARITH;
+                        state_dbg <= 2;
                     end
                     else if(ty==BEQ) begin
                         state <= STATE_EXE_BEQ;
+                        state_dbg <= 4;
                     end
                     else if(ty==LB) begin
                         state <= STATE_EXE_LD;
+                        state_dbg <= 5;
                     end
                     else if(ty==SB||ty==SW) begin
                         state <= STATE_EXE_ST;
-                    end
+                        state_dbg <= 8;
+                    end 
                     else begin
                         state <= STATE_IF;
+                        state_dbg <= 0;
                     end
                     if (ty == LUI) begin
                       lui_imm <= {instr_reg[31:12], 12'h000};
@@ -318,6 +351,8 @@ always_ff @ (posedge clk or posedge rst) begin
                   exe_arith_done <= 1'b0;
                   state <= STATE_WB_ARITH;
                   rd_val <= alu_y;
+
+                  state_dbg <= 3;
                 end
             end
             STATE_WB_ARITH: begin
@@ -335,6 +370,7 @@ always_ff @ (posedge clk or posedge rst) begin
                   we <= 1'b0;
                   reg_write_state <= 0;
                   state <= STATE_IF;
+                  state_dbg <= 0;
                 end
             end
             STATE_EXE_BEQ: begin
@@ -349,11 +385,12 @@ always_ff @ (posedge clk or posedge rst) begin
                   // 这个需要等一个周期
                   pc_reg <= pc_now_reg + lui_imm;
                   state <= STATE_IF;
-
+                  state_dbg <= 0;
                 end
               end
               else begin
                 state <= STATE_IF;
+                state_dbg <= 0;
               end
             end
             STATE_EXE_LD: begin
@@ -367,41 +404,43 @@ always_ff @ (posedge clk or posedge rst) begin
                 exe_mem_done <= 1'b0;
                 sram_addr_tmp <= rs1_val + lui_imm;
                 state <= STATE_READ_LD;
+                state_dbg <= 6;
               end
             end
             STATE_READ_LD: begin
-              wb_adr_o <= $signed(imm)+rs1_val;
-              wb_cyc_o <= 1'b1;
-              wb_stb_o <= 1'b1;
-              wb_we_o <= 1'b0;
+              wbdc_adr_o <= $signed(imm)+rs1_val;
+              wbdc_cyc_o <= 1'b1;
+              wbdc_stb_o <= 1'b1;
+              wbdc_we_o <= 1'b0;
 
               // wb_sel_o 已经在上面赋值了 但是因为过不了编译 所以移到这里了
               case(sram_addr_tmp%4)
-                2'b00: wb_sel_o = 4'b0001;
-                2'b01: wb_sel_o = 4'b0010;
-                2'b10: wb_sel_o = 4'b0100;
-                2'b11: wb_sel_o = 4'b1000;
+                2'b00: wbdc_sel_o = 4'b0001;
+                2'b01: wbdc_sel_o = 4'b0010;
+                2'b10: wbdc_sel_o = 4'b0100;
+                2'b11: wbdc_sel_o = 4'b1000;
               endcase
 
-              if (wb_ack_i) begin
-                case (wb_adr_o%4)
+              if (wbdc_ack_i) begin
+                case (wbdc_adr_o%4)
                   2'b00: begin
-                    rd_val <= wb_dat_i[7:0];
+                    rd_val <= wbdc_dat_i[7:0];
                   end
                   2'b01: begin
-                    rd_val <= wb_dat_i[15:8];
+                    rd_val <= wbdc_dat_i[15:8];
                   end
                   2'b10: begin
-                    rd_val <= wb_dat_i[23:16];
+                    rd_val <= wbdc_dat_i[23:16];
                   end
                   2'b11: begin
-                    rd_val <= wb_dat_i[31:24];
+                    rd_val <= wbdc_dat_i[31:24];
                   end
                 endcase
 
-                wb_cyc_o <= 1'b0;
-                wb_stb_o <= 1'b0;
+                wbdc_cyc_o <= 1'b0;
+                wbdc_stb_o <= 1'b0;
                 state <= STATE_REG_LD;
+                state_dbg <= 7;
               end
             end
 
@@ -419,6 +458,7 @@ always_ff @ (posedge clk or posedge rst) begin
                 we <= 1'b0;
                 reg_write_state <= 0;
                 state <= STATE_IF;
+                state_dbg <= 0;
               end
             end
             STATE_EXE_ST: begin
@@ -434,52 +474,55 @@ always_ff @ (posedge clk or posedge rst) begin
                 if ((rs1_val + lui_imm)%4 ==3) begin
                   is_split <= 1;
                 end
+
+                state_dbg <= 9;
               end
             end
             STATE_WRITE_ST: begin  // 应该到这里 is_split 已经被正常赋值了 非对齐访问是正常的么
               if (!is_split) begin
-                wb_adr_o <= rs1_val + $signed(imm);
-                wb_dat_o <= rs2_val;  // TODO 考虑要不要左移
-                wb_cyc_o <= 1'b1;
-                wb_stb_o <= 1'b1;
-                wb_we_o <= 1'b1;
+                wbdc_adr_o <= rs1_val + $signed(imm);
+                wbdc_dat_o <= rs2_val;  // TODO 考虑要不要左移
+                wbdc_cyc_o <= 1'b1;
+                wbdc_stb_o <= 1'b1;
+                wbdc_we_o <= 1'b1;
                 if (ty == SB) begin
                   case(sram_addr_tmp%4)
-                    2'b00: wb_sel_o = 4'b0001;
-                    2'b01: wb_sel_o = 4'b0010;
-                    2'b10: wb_sel_o = 4'b0100;
-                    2'b11: wb_sel_o = 4'b1000;
+                    2'b00: wbdc_sel_o = 4'b0001;
+                    2'b01: wbdc_sel_o = 4'b0010;
+                    2'b10: wbdc_sel_o = 4'b0100;
+                    2'b11: wbdc_sel_o = 4'b1000;
                     endcase
                 end
                 else begin
                   case(sram_addr_tmp%4)
-                    2'b00: wb_sel_o = 4'b0011;
-                    2'b01: wb_sel_o = 4'b0110;
-                    2'b10: wb_sel_o = 4'b1100;
-                    2'b11: wb_sel_o = 4'b0001;
+                    2'b00: wbdc_sel_o = 4'b0011;
+                    2'b01: wbdc_sel_o = 4'b0110;
+                    2'b10: wbdc_sel_o = 4'b1100;
+                    2'b11: wbdc_sel_o = 4'b0001;
                   endcase
                 end
-                if (wb_ack_i) begin
-                  wb_cyc_o <= 1'b0;
-                  wb_stb_o <= 1'b0;
+                if (wbdc_ack_i) begin
+                  wbdc_cyc_o <= 1'b0;
+                  wbdc_stb_o <= 1'b0;
                   state <= STATE_IF;
+                  state_dbg <= 0;
                 end
               end
               else begin  // 这个分状态写吧
-                wb_adr_o <= sram_addr_tmp;
-                wb_dat_o <= rs2_val[7:0];
-                wb_cyc_o <= 1'b1;
-                wb_stb_o <= 1'b1;
-                wb_we_o <= 1'b1;
-                wb_sel_o <= 4'b1000;
-                if (wb_ack_i) begin
+                wbdc_adr_o <= sram_addr_tmp;
+                wbdc_dat_o <= rs2_val[7:0];
+                wbdc_cyc_o <= 1'b1;
+                wbdc_stb_o <= 1'b1;
+                wbdc_we_o <= 1'b1;
+                wbdc_sel_o <= 4'b1000;
+                if (wbdc_ack_i) begin
                   sram_addr_tmp <= sram_addr_tmp + 4;   // 这个确定是 + 1 莫 **改了这里**
                   // 这一步的 write2ram 是把 rs2_val 换成 rs2_val 的次低8位然后写进去 但是因为之前 always_comb 的原因 使能是 b0011 
                   // 如果之后有问题的话 把 always_comb 的分支换成 write_word/write_byte 试试
                   is_split <= 0;
                   rs2_val <= rs2_val[15:8];
-                  wb_cyc_o <= 1'b0;
-                  wb_stb_o <= 1'b0;
+                  wbdc_cyc_o <= 1'b0;
+                  wbdc_stb_o <= 1'b0;
                 end
               end
             end

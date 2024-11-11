@@ -45,6 +45,20 @@ module tb;
   wire uart_tbre;  // 发送数据标志
   wire uart_tsre;  // 数据发送完毕标志
 
+  reg [3:0] dcache_state_dbg;
+  wire d_wbs_cyc_o_dbg;
+  wire [31:0] d_wbs_adr_o_dbg;
+  wire [31:0] d_wbs_dat_i_dbg;
+  wire d_wbs_ack_i_dbg;
+  wire [31:0] d_wbs_dat_i_dbg;
+  wire [31:0] d_wb_dat_o_dbg;
+  wire d_wb_ack_o_dbg;
+  wire [31:0] d_wb_dat_i_dbg;
+  wire [31:0] d_wb_adr_i_dbg;
+
+  reg [4:0] cpu_state_dbg;
+  wire wbic_cyc_o_dbg;
+  wire [31:0] wbic_adr_o_dbg;
 
   // Windows 需要注意路径分隔符的转义，例如 "D:\\foo\\bar.bin"
   parameter BASE_RAM_INIT_FILE = "D:\\coderyxy4\\test.bin"; // BaseRAM 初始化文件，请修改为实际的绝对路径
@@ -112,8 +126,23 @@ module tb;
       .flash_oe_n(flash_oe_n),
       .flash_ce_n(flash_ce_n),
       .flash_byte_n(flash_byte_n),
-      .flash_we_n(flash_we_n)
+      .flash_we_n(flash_we_n),
 
+        // debug info
+      .dcache_state_dbg(dcache_state_dbg),
+      .d_wbs_cyc_o_dbg(d_wbs_cyc_o_dbg),
+      .d_wbs_adr_o_dbg(d_wbs_adr_o_dbg),
+      .d_wbs_dat_o_dbg(d_wbs_dat_o_dbg),
+      .d_wbs_dat_i_dbg(d_wbs_dat_i_dbg),
+      .d_wbs_ack_i_dbg(d_wbs_ack_i_dbg),
+      .d_wb_dat_o_dbg(d_wb_dat_o_dbg),
+      .d_wb_ack_o_dbg(d_wb_ack_o_dbg),
+      .d_wb_dat_i_dbg(d_wb_dat_i_dbg),
+      .d_wb_adr_i_dbg(d_wb_adr_i_dbg),
+
+      .cpu_state_dbg(cpu_state_dbg),
+      .wbic_cyc_o_dbg(wbic_cyc_o_dbg),
+      .wbic_adr_o_dbg(wbic_adr_o_dbg)
   );
   // 时钟源
   clock osc (

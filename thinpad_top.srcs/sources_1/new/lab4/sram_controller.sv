@@ -41,20 +41,6 @@ module sram_controller #(
       STATE_DONE     // 6
     } state_t;
 
-    // reg ram_ce_n_reg;
-    // reg ram_oe_n_reg;
-    // reg ram_we_n_reg;
-
-    // // initial begin
-    // //   ram_ce_n_reg = 1'b1;
-    // //   ram_oe_n_reg = 1'b1;
-    // //   ram_we_n_reg = 1'b1;
-    // // end
-
-    // assign sram_ce_n = ram_ce_n_reg;
-    // assign sram_oe_n = ram_oe_n_reg;
-    // assign sram_we_n = ram_we_n_reg;
-
     // step1 实现三态门的 wrapper 
     wire [SRAM_DATA_WIDTH-1:0] sram_data_i_comb; // ram 的输出 到了对应阶段用他给 wb_dat_o 赋值
     reg [SRAM_DATA_WIDTH-1:0] sram_data_o_comb; // 给 ram 的输入 到了对应阶段去被 wb_data_i 赋值
